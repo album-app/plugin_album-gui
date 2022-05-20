@@ -6,7 +6,7 @@ from album.core.api.model.collection_index import ICollectionIndex
 from album.core.controller.task_manager import TaskManager
 from album.core.model.resolve_result import ResolveResult
 
-from src.album.gui import AlbumGUI
+from src.album.gui.app import AlbumGUI
 
 
 class TestInteractiveGUI(unittest.TestCase):
