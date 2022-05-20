@@ -1,7 +1,7 @@
 from album.api import Album
 from album.core.controller.task_manager import TaskManager
 
-from album.gui import AlbumGUI
+from album.gui.app import AlbumGUI
 
 
 def run(album_instance: Album, args):
