@@ -1,8 +1,8 @@
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
+
 from album.api import Album
 from album.core.model.task import Task
-
 from album.gui.main_window import MainWindow
 from album.gui.util import display_error
 
@@ -31,7 +31,6 @@ class AlbumGUI:
         self.app.exec_()
 
     def _install_if_needed(self):
-
         if not self.album_instance.is_installed(self.solution):
             self.win.get_solution_widget().get_pre_install_widget().install_solution.connect(lambda: self._install())
             self.win.get_solution_widget().get_pre_install_widget().cancel_solution.connect(lambda: self._cancel())
@@ -49,10 +48,12 @@ class AlbumGUI:
         task._method = self.album_instance.install
         task._args = (self.solution,)
         res = self.task_manager.register_task(task)
-        timer_lambda = lambda: self._check_status(res, self.timer,
-                                  self.win.get_solution_widget().get_install_widget().update_solution_log,
-                                  self.win.get_solution_widget().get_install_widget().set_solution_finished,
-                                  self.win.get_solution_widget().get_install_widget().set_solution_failed)
+        timer_lambda = lambda: self._check_status(
+            res, self.timer,
+            self.win.get_solution_widget().get_install_widget().update_solution_log,
+            self.win.get_solution_widget().get_install_widget().set_solution_finished,
+            self.win.get_solution_widget().get_install_widget().set_solution_failed
+        )
         self.timer.timeout.connect(timer_lambda)
         self.timer.start(1000)
         self.task_manager.finish_tasks()
@@ -88,9 +89,9 @@ class AlbumGUI:
                 task._args = (self.solution, self._construct_args(self.solution, values))
                 res = self.task_manager.register_task(task)
                 timer_lambda = lambda: self._check_status(res, self.timer,
-                                          self.win.get_solution_widget().get_run_widget().update_solution_log,
-                                          self.win.get_solution_widget().get_run_widget().set_solution_finished,
-                                          self.win.get_solution_widget().get_run_widget().set_solution_failed)
+                                                          self.win.get_solution_widget().get_run_widget().update_solution_log,
+                                                          self.win.get_solution_widget().get_run_widget().set_solution_finished,
+                                                          self.win.get_solution_widget().get_run_widget().set_solution_failed)
                 self.timer.timeout.connect(timer_lambda)
                 self.timer.start(1000)
 
@@ -123,7 +124,8 @@ class AlbumGUI:
             return not self.win.isVisible()
         return True
 
-    def _construct_args(self, solution, values):
+    @staticmethod
+    def _construct_args(solution, values):
         res = [solution]
         for name in values:
             res.append("--%s" % name)
