@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QLabel
 
-from album.gui.util import create_btn
+from album.gui.widgets.util import create_btn
 
 
 class PreInstallSolutionWidget(QWidget):
@@ -20,7 +20,7 @@ class PreInstallSolutionWidget(QWidget):
         self._required = []
 
     def _create_actions_box(self):
-        res = QWidget()
+        res = QWidget(self)
         actions_layout = QHBoxLayout(res)
         actions_layout.setContentsMargins(0, 0, 0, 0)
         actions_layout.addWidget(create_btn(self, self.cancel_solution, "Cancel", "Esc"))
@@ -29,11 +29,10 @@ class PreInstallSolutionWidget(QWidget):
         return res
 
     def set_active(self):
-        print("set active")
         self.install_btn.setDefault(True)
         self.install_btn.setAutoDefault(True)
+        self.install_btn.setFocus()
 
     def set_not_active(self):
-        print("set not active")
         self.install_btn.setDefault(False)
         self.install_btn.setAutoDefault(False)

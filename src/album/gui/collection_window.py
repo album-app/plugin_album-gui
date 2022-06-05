@@ -1,0 +1,252 @@
+import pathlib
+import pkgutil
+
+from PyQt5 import QtGui
+from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
+from PyQt5.QtGui import QPixmap, QKeyEvent, QFont
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
+    QAction, QActionGroup
+from album.api import Album
+
+from album.gui.actions_list_model import ActionsListModel
+from album.gui.widgets.solution_view import SolutionView
+from album.gui.widgets.util import create_btn
+
+
+class CollectionWindow(QMainWindow):
+    # events
+    return_pressed = pyqtSignal(QKeyEvent)
+    esc_pressed = pyqtSignal(QKeyEvent)
+    show_solution = pyqtSignal(str)
+    uninstall_solution = pyqtSignal(str)
+    install_solution = pyqtSignal(str)
+    remove_catalog = pyqtSignal(dict)
+    add_new_catalog = pyqtSignal(QWidget)
+    collection_changed = pyqtSignal()
+
+    class Action:
+        def __init__(self, signal, args=None, solution=None):
+            self.signal = signal
+            self.args = args
+            self.solution = solution
+
+    def __init__(self, album_instance: Album, parent=None):
+        super(CollectionWindow, self).__init__(parent)
+        self.selected_solution = None
+        self.album_instance: Album = album_instance
+        self.all_catalogs = []
+        self.deletable_catalogs = []
+        self.list_widget = None
+
+        self.search_model = ActionsListModel()
+        # self.search_proxy_model = ActionFilterProxyModel()
+        self.update_model()
+
+        widget = QWidget(self)
+        self.setMinimumWidth(500)
+        self.setWindowIcon(QtGui.QIcon(str(pathlib.Path(__file__).parent / 'resources' / 'album-xs.png')))
+        self.layout = QVBoxLayout(widget)
+
+        self.layout.setContentsMargins(0, 10, 0, 0)
+        self.layout.setSpacing(0)
+
+        self.layout.addLayout(self._create_header())
+        self.layout.addWidget(self._create_center())
+        self.layout.addLayout(self._create_status_layout())
+
+        self.setCentralWidget(widget)
+
+    def _create_center(self):
+        self._create_list_widget()
+        self._create_search_line()
+        res = QWidget()
+        layout = QVBoxLayout(res)
+        res.setAutoFillBackground(True)
+        # res.setPalette(self.pal)
+        res.setContentsMargins(2, 0, 2, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.search_line)
+        layout.addWidget(self.list_widget)
+        layout.addWidget(self._create_action_widget())
+        return res
+
+    def _create_search_line(self):
+        self.search_line = QLineEdit(self)
+        self.search_line.setStyleSheet(
+            "QLineEdit { border-radius: 0px; border-top: 1px solid #bbbbbb; border-bottom: 1px solid #bbbbbb;padding: 3px;}")
+        self.search_line.installEventFilter(self)
+        self.proxy.setFilterCaseSensitivity(False)
+        self.search_line.textChanged.connect(self.proxy.setFilterFixedString)
+        self.proxy.rowsInserted.connect(self.list_widget.select_first_item)
+        self.proxy.rowsRemoved.connect(self.list_widget.select_first_item)
+        self.proxy.rowsMoved.connect(self.list_widget.select_first_item)
+
+    def _create_list_widget(self):
+        self.proxy = QSortFilterProxyModel(self)
+        self.proxy.setSourceModel(self.search_model)
+        self.list_widget = SolutionView(self)
+
+    def _create_status_layout(self):
+        status_layout = QHBoxLayout()
+        catalog_status = self._create_status_with_action(
+            "catalogs: %s" % len(self.album_instance.get_catalogs_as_dict()["catalogs"]), self._get_catalog_actions())
+
+        solutions_status = self._create_status(
+            "solutions: %s" % self._get_solution_count(self.album_instance.get_index_as_dict()))
+        installed_status = self._create_status(
+            "installed: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict()))
+        # running_status = self._create_status("running: 0")
+        # updates_status = self._create_status("updates: 0")
+        self.collection_changed.connect(lambda: catalog_status.setText(
+            "catalogs: %s" % len(self.album_instance.get_catalogs_as_dict()["catalogs"])))
+        self.collection_changed.connect(lambda: self._set_actions(catalog_status, self._get_catalog_actions()))
+        self.collection_changed.connect(lambda: solutions_status.setText(
+            "solutions: %s" % self._get_solution_count(self.album_instance.get_index_as_dict())))
+        self.collection_changed.connect(lambda: installed_status.setText(
+            "installed: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict())))
+        status_layout.addWidget(catalog_status)
+        status_layout.addWidget(solutions_status)
+        status_layout.addWidget(installed_status)
+        status_layout.addStretch()
+        status_layout.setContentsMargins(3, 8, 3, 3)
+        status_layout.setSpacing(5)
+        # status_layout.addWidget(running_status)
+        # status_layout.addWidget(updates_status)
+        return status_layout
+
+    def _get_catalog_actions(self):
+        actions = QActionGroup(self)
+        add_catalog = QAction("Add catalog")
+        add_catalog.triggered.connect(lambda: self.add_new_catalog.emit(self))
+        actions.addAction(add_catalog)
+        for catalog in self.deletable_catalogs:
+            add_catalog = QAction("Remove catalog %s" % catalog["name"])
+            add_catalog.triggered.connect(lambda: self.remove_catalog.emit(catalog))
+            actions.addAction(add_catalog)
+        return actions.actions()
+
+    def _create_action_widget(self):
+        action_widget = QWidget()
+        action_layout = QHBoxLayout(action_widget)
+        action_layout.setContentsMargins(0, 0, 0, 0)
+        run_btn = create_btn(self, self.run_action, "Run", "Enter")
+        run_btn.setMinimumWidth(100)
+        run_btn.setAutoDefault(True)
+        run_btn.setDefault(True)
+        self.search_line.returnPressed.connect(run_btn.toggle)
+        action_layout.addWidget(run_btn)
+        self.return_pressed.connect(run_btn.keyPressEvent)
+        self.esc_pressed.connect(self.close)
+        action_widget.setContentsMargins(0, 0, 0, 0)
+        return action_widget
+
+    @staticmethod
+    def _create_header():
+        res = QHBoxLayout()
+        res.setContentsMargins(10, 0, 10, 10)
+        logo = QLabel("logo")
+        data = pkgutil.get_data('album.gui.resources', 'album-m-200.png')
+        pixmap = QPixmap()
+        pixmap.loadFromData(data, 'PNG')
+        logo.setPixmap(pixmap)
+        text = QLabel("Welcome to your Album collection.\nPlease type to filter your solutions.")
+        text.setWordWrap(True)
+        text.setContentsMargins(7, 0, 0, 0)
+        res.addWidget(logo)
+        res.addWidget(text, 1)
+        return res
+
+    @staticmethod
+    def _create_status(title):
+        label = QLabel("%s" % title)
+        font = QFont("Monospace")
+        font.setPointSize(10)
+        label.setFont(font)
+        return label
+
+    def _create_status_with_action(self, title, actions):
+        label = QPushButton("%s" % title, self)
+        font = QFont("Monospace")
+        font.setPointSize(10)
+        label.setFont(font)
+        self._set_actions(label, actions)
+        return label
+
+    def _set_actions(self, button, actions):
+        menu = QMenu(button)
+        # label.setContextMenuPolicy(Qt.ActionsContextMenu)
+        menu.addActions(actions)
+        button.setMenu(menu)
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
+            if key == Qt.Key_Return:
+                self.return_pressed.emit(event)
+            if key == Qt.Key_Escape:
+                self.esc_pressed.emit(event)
+            if source is self.search_line:
+                key = event.key()
+                if key == Qt.Key_Left or key == Qt.Key_Right or key == Qt.Key_Up or key == Qt.Key_Down:
+                    self.list_widget.keyPressEvent(event)
+        return super().eventFilter(source, event)
+
+    def run_action(self):
+        source_index = self.proxy.mapToSource(self.list_widget.selectedIndexes()[0])
+        item = self.search_model.item_from_index(source_index.row())
+        action = item.action
+        if action.args:
+            action.signal.emit(action.args)
+        else:
+            action.signal.emit()
+
+    def update_model(self):
+        index = self.album_instance.get_index_as_dict()
+        actions_list = []
+        self.all_catalogs = []
+        self.deletable_catalogs = []
+        for catalog in index["catalogs"]:
+            for solution in catalog["solutions"]:
+                coordinates = "%s:%s:%s" % (
+                    solution["setup"]["group"], solution["setup"]["name"], solution["setup"]["version"])
+                full_coordinates = "%s:%s" % (catalog["name"], coordinates)
+                title = solution["setup"]["title"]
+                if not title:
+                    title = coordinates
+                status = "✔" if solution["internal"]["installed"] else " "
+                item = ActionsListModel.ActionItem()
+                item.text = "%s [%s] %s" % (status, catalog["name"], title)
+                item.action = CollectionWindow.Action(self.show_solution, full_coordinates, solution)
+                item.solution_coordinates = full_coordinates
+                actions_list.append(item)
+        for catalog in index["catalogs"]:
+            self.all_catalogs.append(catalog)
+            if catalog["deletable"]:
+                self.deletable_catalogs.append(catalog)
+
+        self.search_model.set_list(actions_list)
+        if self.list_widget:
+            self.list_widget.update()
+
+        self.collection_changed.emit()
+
+    def set_active(self):
+        pass
+
+    def set_not_active(self):
+        pass
+
+    @staticmethod
+    def _get_solution_count(index_dict):
+        count = 0
+        for catalog in index_dict["catalogs"]:
+            count += len(catalog["solutions"])
+        return count
+
+    @staticmethod
+    def _get_installed_solution_count(index_dict):
+        count = 0
+        for catalog in index_dict["catalogs"]:
+            count += len([solution for solution in catalog["solutions"] if solution["internal"]["installed"]])
+        return count

@@ -2,7 +2,7 @@ import pkg_resources
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel
 
-from album.gui.util import create_btn
+from album.gui.widgets.util import create_btn
 
 
 class PreRunSolutionWidget(QWidget):
@@ -14,8 +14,13 @@ class PreRunSolutionWidget(QWidget):
         super().__init__(parent)
         self._load_plugins()
         # gui
+        self.setStyleSheet(
+            "PreRunSolutionWidget { border-top: 1px solid #bbbbbb; border-bottom: 1px solid #bbbbbb;}")
+        self.setMinimumWidth(500)
+        self.setContentsMargins(0, 0, 0, 0)
         self.layout = QVBoxLayout(self)
         scroll_widget = QWidget()
+        scroll_widget.setContentsMargins(0, 0, 0, 0)
         self.scroll_layout = QVBoxLayout(scroll_widget)
         self.scroll_layout.setAlignment(Qt.AlignTop)
         self.scroll = QScrollArea()
@@ -28,13 +33,14 @@ class PreRunSolutionWidget(QWidget):
         self.layout.addWidget(self.scroll)
         self.layout.addWidget(self.required_warning)
         self.layout.addWidget(self._create_actions_box())
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self._widgets = {}
         self._required = []
 
     def _create_actions_box(self):
         res = QWidget()
         actions_layout = QHBoxLayout(res)
-        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setContentsMargins(5, 5, 5, 5)
         actions_layout.addWidget(create_btn(self, self.cancel_solution, "Cancel", "Esc"))
         self.run_btn = create_btn(self, self.run_solution, "Run", "Enter")
         self.run_btn.setDefault(True)
@@ -54,11 +60,22 @@ class PreRunSolutionWidget(QWidget):
             entry_point.load()
             self._plugins[entry_point.name] = entry_point.load()
 
-    def add_argument(self, argument):
+    def add_arguments(self, arguments):
+        self._widgets = {}
+        for arg in arguments:
+            self._add_argument(arg)
+        max_height = 0
+        for widget_name in self._widgets:
+            widget = self._widgets[widget_name]
+            max_height += widget.height()
+        self.scroll.setMinimumHeight(min(max_height, 300))
+
+    def _add_argument(self, argument):
         self.scroll.setFrameShape(QFrame.Box)
         arg_name = argument["name"]
-        if "required" in argument:
-            if argument["required"] and arg_name not in self._required:
+
+        if ("required" not in argument or argument["required"]) and "default" not in argument:
+            if arg_name not in self._required:
                 self._required.append(arg_name)
         if "type" in argument:
             arg_type = argument["type"]
@@ -74,16 +91,16 @@ class PreRunSolutionWidget(QWidget):
     def get_values(self):
         res = {}
         for name in self._widgets:
-            res[name] = self._widgets[name].get_value()
+            value = self._widgets[name].get_value()
+            if value is not None:
+                res[name] = str(value)
         return res
 
     def check_required_fields(self) -> bool:
         values = self.get_values()
         missing_values = []
         for name in self._required:
-            assert name in values
-            value = values[name]
-            if not value:
+            if name not in values or not values[name]:
                 missing_values.append(name)
         if missing_values:
             self.required_warning.setVisible(True)
