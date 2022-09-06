@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QLineEdit, QHBoxLayout, QLabel, QFileDialog, QPushButton, QWidget, QCheckBox, QVBoxLayout, \
     QDoubleSpinBox, QSpinBox
 
-from album.gui.argument_widget import ArgumentWidget
+from album.gui.widgets.argument_widget import ArgumentWidget
 
 
 def create_gui_string(argument):
@@ -36,24 +36,21 @@ class AbstractWidget(ArgumentWidget):
     def __init__(self, arg):
         super().__init__()
         box = QVBoxLayout()
-        valuelabelbox = QHBoxLayout()
         self.setLayout(box)
-        self.valuebox = self.create_value_widget()
-        descrLb = QLabel("%s" % (arg["description"]))
-        descrLb.setWordWrap(True)
-        descrLb.setStyleSheet("color: rgba(0,0,0,0.6)")
+        default_value = None
+        if "default" in arg:
+            default_value = arg["default"]
+        self.valuebox = self.create_value_widget(default_value)
         arg_name = arg["name"]
-        if "required" in arg:
-            if arg["required"]:
-                arg_name += " *"
-        nameLb = QLabel("%s" % (arg_name))
+        if "required" not in arg or arg["required"]:
+            arg_name += "*"
+        nameLb = QLabel("<b>%s</b> %s" % (arg_name, arg["description"]))
+        nameLb.setWordWrap(True)
         nameLb.setBuddy(self.valuebox)
-        valuelabelbox.addWidget(nameLb, 1)
-        valuelabelbox.addWidget(self.valuebox, 5)
-        box.addLayout(valuelabelbox)
-        box.addWidget(descrLb)
+        box.addWidget(nameLb)
+        box.addWidget(self.valuebox)
 
-    def create_value_widget(self):
+    def create_value_widget(self, default_value):
         raise NotImplementedError()
 
     def get_value(self):
@@ -64,8 +61,11 @@ class StringWidget(AbstractWidget):
     def __init__(self, arg):
         super().__init__(arg)
 
-    def create_value_widget(self):
-        return QLineEdit()
+    def create_value_widget(self, default_value):
+        res = QLineEdit()
+        if default_value:
+            res.setText(default_value)
+        return res
 
     def get_value(self):
         return self.valuebox.text()
@@ -76,9 +76,11 @@ class BooleanWidget(AbstractWidget):
         self.checkbox = None
         super().__init__(arg)
 
-    def create_value_widget(self):
+    def create_value_widget(self, default_value):
         self.checkbox = QCheckBox()
         self.checkbox.setStyleSheet("QCheckBox::indicator{height: 20px; width: 20px;}")
+        if default_value:
+            self.checkbox.setChecked(bool(default_value))
         widget = QWidget()
         layout = QHBoxLayout()
         widget.setLayout(layout)
@@ -95,8 +97,11 @@ class DoubleWidget(AbstractWidget):
     def __init__(self, arg):
         super().__init__(arg)
 
-    def create_value_widget(self):
-        return QDoubleSpinBox()
+    def create_value_widget(self, default_value):
+        res = QDoubleSpinBox()
+        if default_value:
+            res.setValue(float(default_value))
+        return res
 
     def get_value(self):
         return self.valuebox.value()
@@ -106,11 +111,14 @@ class IntegerWidget(AbstractWidget):
     def __init__(self, arg):
         super().__init__(arg)
 
-    def create_value_widget(self):
-        return QSpinBox()
+    def create_value_widget(self, default_value):
+        res = QSpinBox()
+        if default_value:
+            res.setValue(int(default_value))
+        return res
 
     def get_value(self):
-        return self.valuebox.value()
+        return int(self.valuebox.value())
 
 
 class FileWidget(AbstractWidget):
@@ -118,7 +126,7 @@ class FileWidget(AbstractWidget):
         super().__init__(arg)
         self.file_mode = file_mode
 
-    def create_value_widget(self):
+    def create_value_widget(self, default_value):
         layout = QHBoxLayout()
         self.btn = QPushButton("Browse")
         self.btn.clicked.connect(self._get_files)

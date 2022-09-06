@@ -7,7 +7,16 @@ def display_error(text):
     msg.setText("Error")
     msg.setInformativeText(text)
     msg.setWindowTitle("Error")
-    msg.show()
+    msg.exec_()
+
+
+def display_confirmation(text):
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Question)
+    msg.setText("Confirmation requested")
+    msg.setInformativeText(text)
+    msg.setWindowTitle("Confirmation Requested")
+    return msg.exec_()
 
 
 def create_btn(parent, emit_slot, label, shortcut):

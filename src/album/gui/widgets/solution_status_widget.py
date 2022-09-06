@@ -1,11 +1,15 @@
+import math
+
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel, QProgressBar, QPushButton
+from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel, QProgressBar
 
-from album.gui.util import create_btn
+from album.gui.widgets.util import create_btn
 
 
-class InstallSolutionWidget(QWidget):
-    continue_after_install = pyqtSignal()
+class SolutionStatus(QWidget):
+    continue_signal = pyqtSignal()
+    cancel_signal = pyqtSignal()
+
     def __init__(self, parent):
         super().__init__(parent)
         self.layout = QVBoxLayout(self)
@@ -27,17 +31,20 @@ class InstallSolutionWidget(QWidget):
         self._last_log = None
 
     def _create_status_box(self):
-        res = QWidget()
+        res = QWidget(self)
         actions_layout = QHBoxLayout(res)
         actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.status_label = QLabel("Installing...")
+        self.status_label = QLabel(self._get_progress_text())
         self.status_widget = QProgressBar()
         self.status_widget.setRange(0, 0)
-        self.continue_btn = create_btn(self, self.continue_after_install, "Continue", "Enter")
+        # self.cancel_btn = create_btn(self, self.cancel_installation, "Cancel", "Esc")
+        # self.cancel_btn.setVisible(True)
+        self.continue_btn = create_btn(self, self.continue_signal, self._get_continue_text(), "Enter")
         self.continue_btn.setVisible(False)
         actions_layout.addWidget(self.status_label)
         actions_layout.addWidget(self.status_widget, 1)
         actions_layout.addStretch()
+        # actions_layout.addWidget(self.cancel_btn)
         actions_layout.addWidget(self.continue_btn)
         return res
 
@@ -46,26 +53,42 @@ class InstallSolutionWidget(QWidget):
         start_i = 0
         if self._last_log:
             for i in range(len(records)):
-                if records[i]["msg"] == self._last_log["msg"] and records[i]["asctime"] == self._last_log["asctime"]:
-                    start_i = i+1
-                    break
+                record = records[i]
+                if hasattr(record, "msg"):
+                    if record.msg == self._last_log.msg and math.isclose(record.created, self._last_log.created):
+                        start_i = i + 1
+                        break
+                else:
+                    if record["msg"] == self._last_log["msg"] and record["asctime"] == self._last_log["asctime"]:
+                        start_i = i+1
+                        break
         for i in range(start_i, len(records)):
             record = records[i]
             if self.run_output.text():
-                self.run_output.setText("%s\n%s" % (self.run_output.text(), record["msg"]))
+                if hasattr(record, "msg"):
+                    self.run_output.setText("%s\n%s" % (self.run_output.text(), record.msg))
+                else:
+                    self.run_output.setText("%s\n%s" % (self.run_output.text(), record["msg"]))
             else:
-                self.run_output.setText("%s" % record["msg"])
+                if hasattr(record, "msg"):
+                    self.run_output.setText("%s" % record.msg)
+                else:
+                    self.run_output.setText("%s" % record["msg"])
         self.scroll_widget.update()
+        self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
         self._last_log = records[len(records)-1]
+        self.set_active()
 
     def set_solution_finished(self):
         self.status_widget.setVisible(False)
-        self.status_label.setText("Finished.")
+        self.status_label.setText(self._get_finished_text())
         self.continue_btn.setVisible(True)
+        # self.cancel_btn.setVisible(False)
 
     def set_solution_failed(self):
         self.status_widget.setVisible(False)
-        self.status_label.setText("Failed.")
+        self.status_label.setText(self._get_failed_text())
+        # self.cancel_btn.setVisible(False)
 
     def set_active(self):
         self.continue_btn.setDefault(True)
@@ -74,3 +97,15 @@ class InstallSolutionWidget(QWidget):
     def set_not_active(self):
         self.continue_btn.setDefault(False)
         self.continue_btn.setAutoDefault(False)
+
+    def _get_continue_text(self):
+        return "Continue"
+
+    def _get_progress_text(self):
+        return "Uninstalling..."
+
+    def _get_failed_text(self):
+        return "Failed."
+
+    def _get_finished_text(self):
+        return "Finished."
