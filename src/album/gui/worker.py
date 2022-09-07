@@ -5,7 +5,7 @@ from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
 from album.core.api.model.task import ILogHandler
 from album.core.model.task import Task
 from album.runner import album_logging
-from album.runner.album_logging import get_active_logger
+from album.runner.album_logging import get_active_logger, LogLevel
 
 
 class Worker(QRunnable):
@@ -34,7 +34,7 @@ class Worker(QRunnable):
 
     def run(self):
         get_active_logger().info(f"starting task {self.task.id()}...")
-        logger = album_logging.configure_logging("task" + str(self.task.id()))
+        logger = album_logging.configure_logging("task" + str(self.task.id()), loglevel=LogLevel.DEBUG)
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         logger.info(self.task.method())
