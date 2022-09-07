@@ -68,11 +68,10 @@ class AlbumGUI(QObject):
                 win.get_uninstall_widget().continue_signal.connect(
                     lambda: win.close())
                 win.show_uninstall()
-                worker = Worker(self.album_instance.uninstall, {"solution_to_resolve": solution},
-                                lambda: self._widget_finished(win.get_uninstall_widget()))
+                worker = Worker(self.album_instance.uninstall, {"solution_to_resolve": solution})
+                worker.handler.task_finished.connect(lambda: self._widget_finished(win.get_uninstall_widget()))
                 self.ongoing_processes[win] = worker
-                worker.handler.new_log.connect(
-                    lambda: win.get_uninstall_widget().update_solution_log(worker.task.log_handler().records()))
+                worker.handler.new_log.connect(lambda records: win.get_uninstall_widget().update_solution_log(records))
                 self.threadpool.start(worker)
         except LookupError:
             display_error("Cannot find solution %s." % solution)
@@ -86,10 +85,9 @@ class AlbumGUI(QObject):
     def remove_catalog(self, catalog):
         if display_confirmation("Do you really want to remove catalog %s (%s)?" % (catalog["name"], catalog["src"])):
             try:
-                worker = Worker(self.album_instance.remove_catalog_by_src, {"catalog_src": catalog["src"]},
-                                lambda: self.collection_changed.emit())
-                worker.handler.new_log.connect(
-                    lambda: self._check_log_for_error(worker.task.log_handler().records()))
+                worker = Worker(self.album_instance.remove_catalog_by_src, {"catalog_src": catalog["src"]})
+                worker.handler.task_finished.connect(self.collection_changed)
+                worker.handler.new_log.connect(lambda records: self._check_log_for_error(records))
                 self.threadpool.start(worker)
             except RuntimeError as e:
                 display_error(str(e))
@@ -98,8 +96,8 @@ class AlbumGUI(QObject):
         text, ok = QInputDialog.getText(parent, 'Add catalog', 'Enter the catalog path or URL:')
         if ok:
             try:
-                worker = Worker(self.album_instance.add_catalog, {"catalog_src": text},
-                                lambda: self.collection_changed.emit())
+                worker = Worker(self.album_instance.add_catalog, {"catalog_src": text})
+                worker.handler.task_finished.connect(self.collection_changed)
                 self.threadpool.start(worker)
             except Exception as e:
                 self.album_instance.remove_catalog_by_src(text)
@@ -118,11 +116,10 @@ class AlbumGUI(QObject):
         win.get_install_widget().continue_signal.connect(lambda: self._show_pre_run(win, solution, solution_data))
         win.show_install()
 
-        worker = Worker(self.album_instance.install, {"solution_to_resolve": solution},
-                        lambda: self._widget_finished(win.get_install_widget()))
+        worker = Worker(self.album_instance.install, {"solution_to_resolve": solution})
+        worker.handler.task_finished.connect(lambda: self._widget_finished(win.get_install_widget()))
         self.ongoing_processes[win] = worker
-        worker.handler.new_log.connect(
-            lambda: win.get_install_widget().update_solution_log(worker.task.log_handler().records()))
+        worker.handler.new_log.connect(lambda records: win.get_install_widget().update_solution_log(records))
         self.threadpool.start(worker)
 
     def _cancel_installation(self, win, solution, solution_data):
@@ -154,11 +151,10 @@ class AlbumGUI(QObject):
                 win.show_run()
                 win.get_run_widget().continue_signal.connect(lambda: win.close())
                 worker = Worker(self.album_instance.run, {"solution_to_resolve": solution,
-                                                          "argv": self._construct_args(solution, values)},
-                                win.get_run_widget().set_solution_finished)
+                                                          "argv": self._construct_args(solution, values)})
+                worker.handler.task_finished.connect(lambda: win.get_run_widget().set_solution_finished())
                 self.ongoing_processes[win] = worker
-                worker.handler.new_log.connect(
-                    lambda: win.get_run_widget().update_solution_log(worker.task.log_handler().records()))
+                worker.handler.new_log.connect(lambda records: win.get_run_widget().update_solution_log(records))
                 self.threadpool.start(worker)
 
     @staticmethod

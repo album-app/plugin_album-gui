@@ -9,11 +9,10 @@ from album.runner.album_logging import get_active_logger
 
 
 class Worker(QRunnable):
-    finished = pyqtSignal()
-    progress = pyqtSignal(int)
 
     class LogHandler(ILogHandler, QObject):
-        new_log = pyqtSignal()
+        new_log = pyqtSignal(list)
+        task_finished = pyqtSignal()
 
         def __init__(self):
             QObject.__init__(self)
@@ -22,21 +21,20 @@ class Worker(QRunnable):
 
         def emit(self, record: logging.LogRecord) -> None:
             self._records.append(record)
-            self.new_log.emit()
+            self.new_log.emit(self.records())
 
         def records(self):
             return self._records
 
-    def __init__(self, method, method_args, on_finish):
+    def __init__(self, method, method_args):
         super().__init__()
         self.task = Task(method, method_args)
         self.task.set_id(random.randint(0, 10000))
         self.handler = Worker.LogHandler()
-        self.on_finish = on_finish
 
     def run(self):
-        get_active_logger().info(f"starting task {id}...")
-        logger = album_logging.configure_logging("task" + str(id))
+        get_active_logger().info(f"starting task {self.task.id()}...")
+        logger = album_logging.configure_logging("task" + str(self.task.id()))
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         try:
@@ -46,5 +44,5 @@ class Worker(QRunnable):
             # TODO set window to failed
         logger.removeHandler(self.handler)
         album_logging.pop_active_logger()
-        get_active_logger().info(f"finished task {id}.")
-        self.on_finish()
+        get_active_logger().info(f"finished task {self.task.id()}.")
+        self.handler.task_finished.emit()
