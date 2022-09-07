@@ -65,13 +65,12 @@ class AlbumGUI(QObject):
             if not self.album_instance.is_installed(solution):
                 return
             else:
-                win.get_uninstall_widget().continue_signal.connect(
-                    lambda: win.close())
+                win.get_uninstall_widget().continue_signal.connect(lambda: win.close())
                 win.show_uninstall()
                 worker = Worker(self.album_instance.uninstall, {"solution_to_resolve": solution})
                 worker.handler.task_finished.connect(lambda: self._widget_finished(win.get_uninstall_widget()))
                 self.ongoing_processes[win] = worker
-                worker.handler.new_log.connect(lambda records: win.get_uninstall_widget().update_solution_log(records))
+                # worker.handler.new_log.connect(lambda records: win.get_uninstall_widget().update_solution_log(records))
                 self.threadpool.start(worker)
         except LookupError:
             display_error("Cannot find solution %s." % solution)
