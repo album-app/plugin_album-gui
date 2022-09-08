@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QFontInfo, QFont
 from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QLabel, QMessageBox
 
 
@@ -26,8 +27,30 @@ def create_btn(parent, emit_slot, label, shortcut):
     box.addWidget(QLabel(label))
     box.addStretch()
     shortcut_label = QLabel("%s" % shortcut)
-    shortcut_label.setStyleSheet("color: rgba(0, 0, 0, 100); font-family: monospace;")
+    shortcut_label.setFont(get_monospace_font())
+    shortcut_label.setStyleSheet("color: rgba(0, 0, 0, 100);")
     box.addWidget(shortcut_label)
     btn.setLayout(box)
     btn.clicked.connect(emit_slot)
     return btn
+
+
+def is_fixed_pitch(font):
+    fi = QFontInfo(font)
+    return fi.fixedPitch()
+
+
+def get_monospace_font():
+    font = QFont("monospace")
+    if is_fixed_pitch(font):
+        return font
+    font.setStyleHint(QFont.Monospace)
+    if is_fixed_pitch(font):
+        return font
+    font.setStyleHint(QFont.TypeWriter)
+    if is_fixed_pitch(font):
+        return font
+    font.setFamily("courier")
+    if is_fixed_pitch(font):
+        return font
+    return font

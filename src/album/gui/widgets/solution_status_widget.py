@@ -3,7 +3,7 @@ import math
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel, QProgressBar
 
-from album.gui.widgets.util import create_btn
+from album.gui.widgets.util import create_btn, get_monospace_font
 
 
 class SolutionStatus(QWidget):
@@ -16,7 +16,7 @@ class SolutionStatus(QWidget):
         self.scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_widget)
         self.run_output = QLabel()
-        self.run_output.setStyleSheet("font-family: monospace;")
+        self.run_output.setFont(get_monospace_font())
         self.scroll_layout.addWidget(self.run_output)
         self.scroll = QScrollArea()
         self.scroll.setFrameShape(QFrame.NoFrame)
