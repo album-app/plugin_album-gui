@@ -1,4 +1,5 @@
 import logging
+import platform
 import random
 import traceback
 
@@ -39,7 +40,12 @@ class Worker(QRunnable):
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         try:
+            if platform.system() == 'Windows':
+                import pythoncom
+                pythoncom.CoInitialize()
             self.task.method()(**self.task.args())
+            if platform.system() == 'Windows':
+                pythoncom.CoUninitialize()
         except Exception as e:
             traceback.print_exc()
             logger.error(str(e))
