@@ -12,7 +12,7 @@ class SolutionView(QListView):
         self.collection_widget = collection_widget
         self.setModel(self.collection_widget.proxy)
         font = get_monospace_font()
-        font.setPointSize(10)
+        font.setPointSize(self.font().pointSize())
         self.setFont(font)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setStyleSheet("QListView { border-radius: 0px;}")

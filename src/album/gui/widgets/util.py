@@ -22,15 +22,16 @@ def display_confirmation(text):
 
 def create_btn(parent, emit_slot, label, shortcut):
     btn = QPushButton(parent)
-    box = QHBoxLayout()
-    box.setContentsMargins(4, 4, 4, 4)
-    box.addWidget(QLabel(label))
-    box.addStretch()
-    shortcut_label = QLabel("%s" % shortcut)
-    shortcut_label.setFont(get_monospace_font())
-    shortcut_label.setStyleSheet("color: rgba(0, 0, 0, 100);")
-    box.addWidget(shortcut_label)
-    btn.setLayout(box)
+    # box = QHBoxLayout()
+    # box.setContentsMargins(4, 4, 4, 4)
+    # box.addWidget(QLabel(label))
+    # box.addStretch()
+    # shortcut_label = QLabel("%s" % shortcut)
+    # shortcut_label.setFont(get_monospace_font())
+    # shortcut_label.setStyleSheet("color: rgba(0, 0, 0, 100);")
+    # box.addWidget(shortcut_label)
+    # btn.setLayout(box)
+    btn.setText(label)
     btn.clicked.connect(emit_slot)
     return btn
 

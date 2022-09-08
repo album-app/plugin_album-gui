@@ -3,7 +3,7 @@ import pkgutil
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
-from PyQt5.QtGui import QPixmap, QKeyEvent, QFont
+from PyQt5.QtGui import QPixmap, QKeyEvent
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
     QAction, QActionGroup
 from album.api import Album
@@ -109,8 +109,8 @@ class CollectionWindow(QMainWindow):
         status_layout.addWidget(solutions_status)
         status_layout.addWidget(installed_status)
         status_layout.addStretch()
-        status_layout.setContentsMargins(3, 8, 3, 3)
-        status_layout.setSpacing(5)
+        status_layout.setContentsMargins(3, 3, 3, 3)
+        status_layout.setSpacing(10)
         # status_layout.addWidget(running_status)
         # status_layout.addWidget(updates_status)
         return status_layout
@@ -138,7 +138,7 @@ class CollectionWindow(QMainWindow):
         action_layout.addWidget(run_btn)
         self.return_pressed.connect(run_btn.keyPressEvent)
         self.esc_pressed.connect(self.close)
-        action_widget.setContentsMargins(0, 0, 0, 0)
+        action_widget.setContentsMargins(0, 2, 0, 0)
         return action_widget
 
     @staticmethod
@@ -161,14 +161,14 @@ class CollectionWindow(QMainWindow):
     def _create_status(title):
         label = QLabel("%s" % title)
         font = get_monospace_font()
-        font.setPointSize(10)
+        font.setPointSize(label.font().pointSize()*0.93)
         label.setFont(font)
         return label
 
     def _create_status_with_action(self, title, actions):
         label = QPushButton("%s" % title, self)
         font = get_monospace_font()
-        font.setPointSize(10)
+        font.setPointSize(label.font().pointSize()*0.93)
         label.setFont(font)
         self._set_actions(label, actions)
         return label
