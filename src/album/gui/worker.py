@@ -1,5 +1,6 @@
 import logging
 import random
+import traceback
 
 from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
 from album.core.api.model.task import ILogHandler
@@ -37,11 +38,10 @@ class Worker(QRunnable):
         logger = album_logging.configure_logging("task" + str(self.task.id()), loglevel=LogLevel.DEBUG)
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
-        logger.info(self.task.method())
-        logger.info(self.task.args())
         try:
             self.task.method()(**self.task.args())
         except Exception as e:
+            traceback.print_exc()
             logger.error(str(e))
             # TODO set window to failed
         logger.removeHandler(self.handler)
