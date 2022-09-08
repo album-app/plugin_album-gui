@@ -43,7 +43,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
-        mock_album.run.return_value = {
+        mock_album.launch_gui.return_value = {
             "id": "0"
         }
         mock_task_manager.get_status.side_effect = [{"status": "RUNNING", "records": [
@@ -72,7 +72,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
-        mock_album.run.return_value = {
+        mock_album.launch_gui.return_value = {
             "id": "0"
         }
         mock_task_manager.get_status.side_effect = [{"status": "RUNNING", "records": [

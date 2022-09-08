@@ -1,0 +1,1 @@
+Pyshortcuts was modified to not convert the `script` parameter into an absolute path.

@@ -17,7 +17,7 @@ class TestCommandline(unittest.TestCase):
         album_gui = create_autospec(AlbumGUI)
         _create_gui.return_value = album_gui
 
-        commandline.run(album_instance, Namespace(solution=None))
+        commandline.launch_gui(album_instance, Namespace(solution=None))
         album_gui.launch.assert_called_once()
 
     @patch('album.gui.commandline._create_gui')
@@ -26,7 +26,7 @@ class TestCommandline(unittest.TestCase):
         album_gui = create_autospec(AlbumGUI)
         _create_gui.return_value = album_gui
 
-        commandline.run(album_instance, Namespace(solution="test"))
+        commandline.launch_gui(album_instance, Namespace(solution="test"))
         album_gui.launch.assert_called_once_with("test")
         album_gui.launch.assert_called_once()
 
@@ -35,12 +35,12 @@ class TestCommandline(unittest.TestCase):
 
         sys.argv = ["", "gui", "xyz"]
         args = parser.parse_known_args()
-        self.assertEqual(commandline.run, args[0].func)
+        self.assertEqual(commandline.launch_gui, args[0].func)
         self.assertEqual("xyz", args[0].solution)
 
         sys.argv = ["", "gui"]
         args = parser.parse_known_args()
-        self.assertEqual(commandline.run, args[0].func)
+        self.assertEqual(commandline.launch_gui, args[0].func)
         self.assertEqual(None, args[0].solution)
 
 
