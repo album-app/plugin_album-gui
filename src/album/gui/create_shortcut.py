@@ -1,4 +1,5 @@
 import platform
+import shutil
 from pathlib import Path
 
 from album.api import Album
@@ -20,6 +21,8 @@ def create_shortcut(album_instance: Album, args):
     album_base_path = album_instance.configuration().base_cache_path()
     album_environment_path = album_base_path.joinpath('envs', 'album')
     conda_executable = album_instance.configuration().conda_executable()
+    if conda_executable == 'conda':
+        conda_executable = shutil.which(conda_executable)
     script_path = " ".join(['run', '-p', str(album_environment_path), 'album', 'gui'])
     exec = " ".join([conda_executable])
     icon_path = get_icon_path()
