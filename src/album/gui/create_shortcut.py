@@ -1,4 +1,3 @@
-import pathlib
 import platform
 from pathlib import Path
 
@@ -19,7 +18,7 @@ def get_icon_path():
 def create_shortcut(album_instance: Album, args):
     # FIXME determine where current album environment is located
     album_base_path = album_instance.configuration().base_cache_path()
-    album_environment_path = album_base_path.join('envs', 'album')
+    album_environment_path = album_base_path.joinpath('envs', 'album')
     conda_executable = album_instance.configuration().conda_executable()
     script_path = " ".join(['run', '-p', str(album_environment_path), 'album', 'gui'])
     exec = " ".join([conda_executable])

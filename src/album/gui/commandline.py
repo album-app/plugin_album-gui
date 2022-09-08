@@ -23,7 +23,8 @@ def create_parser_gui(parser):
     p.add_argument('solution', type=str,
                    help='path for the solution file or coordinates of the solution (group:name:version)', nargs='?')
 
-def create_parser_shortcut_album(parser):
-    p = parser.create_command_parser('shortcut', create_shortcut, 'Create shortcut for Album.')
+
+def create_parser_shortcut(parser):
+    p = parser.create_command_parser('add-shortcut', create_shortcut, 'Create shortcut for Album.')
     p.add_argument('solution', type=str,
                    help='path for the solution file or coordinates of the solution (group:name:version)', nargs='?')
