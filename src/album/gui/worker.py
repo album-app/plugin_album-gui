@@ -44,12 +44,13 @@ class Worker(QRunnable):
                 import pythoncom
                 pythoncom.CoInitialize()
             self.task.method()(**self.task.args())
-            if platform.system() == 'Windows':
-                pythoncom.CoUninitialize()
         except Exception as e:
             traceback.print_exc()
             logger.error(str(e))
             # TODO set window to failed
+        finally:
+            if platform.system() == 'Windows':
+                pythoncom.CoUninitialize()
         logger.removeHandler(self.handler)
         album_logging.pop_active_logger()
         get_active_logger().info(f"finished task {self.task.id()}.")
