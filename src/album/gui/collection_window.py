@@ -10,7 +10,7 @@ from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
 from album.gui.widgets.solution_view import SolutionView
-from album.gui.widgets.util import create_btn
+from album.gui.widgets.util import create_btn, get_monospace_font
 
 
 class CollectionWindow(QMainWindow):
@@ -160,14 +160,14 @@ class CollectionWindow(QMainWindow):
     @staticmethod
     def _create_status(title):
         label = QLabel("%s" % title)
-        font = QFont("Monospace")
+        font = get_monospace_font()
         font.setPointSize(10)
         label.setFont(font)
         return label
 
     def _create_status_with_action(self, title, actions):
         label = QPushButton("%s" % title, self)
-        font = QFont("Monospace")
+        font = get_monospace_font()
         font.setPointSize(10)
         label.setFont(font)
         self._set_actions(label, actions)
@@ -214,7 +214,7 @@ class CollectionWindow(QMainWindow):
                 title = solution["setup"]["title"]
                 if not title:
                     title = coordinates
-                status = "✔" if solution["internal"]["installed"] else " "
+                status = "x" if solution["internal"]["installed"] else " "
                 item = ActionsListModel.ActionItem()
                 item.text = "%s [%s] %s" % (status, catalog["name"], title)
                 item.action = CollectionWindow.Action(self.show_solution, full_coordinates, solution)
