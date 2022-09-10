@@ -36,7 +36,7 @@ class Worker(QRunnable):
 
     def run(self):
         get_active_logger().info(f"starting task {self.task.id()}...")
-        logger = album_logging.configure_logging("task" + str(self.task.id()), loglevel=LogLevel.DEBUG)
+        logger = album_logging.configure_logging("task" + str(self.task.id()))
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         try:
