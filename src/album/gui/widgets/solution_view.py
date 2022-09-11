@@ -15,7 +15,6 @@ class SolutionView(QListView):
         font.setPointSize(self.font().pointSize())
         self.setFont(font)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setStyleSheet("QListView { border-radius: 0px;}")
         self.select_first_item()
 
     def select_first_item(self):

@@ -1,11 +1,10 @@
 import pathlib
-import pkgutil
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
-from PyQt5.QtGui import QPixmap, QKeyEvent
+from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
-    QAction, QActionGroup
+    QAction, QActionGroup, QSplitter
 from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
@@ -43,22 +42,27 @@ class CollectionWindow(QMainWindow):
         self.update_model()
 
         widget = QWidget(self)
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(400)
         self.setWindowIcon(QtGui.QIcon(str(pathlib.Path(__file__).parent / 'resources' / 'album-xs.png')))
         self.layout = QVBoxLayout(widget)
 
         self.layout.setContentsMargins(0, 10, 0, 0)
         self.layout.setSpacing(0)
 
-        self.layout.addLayout(self._create_header())
-        self.layout.addWidget(self._create_center())
+        self._create_list_widget()
+        self._create_search_line()
+
+        top_layout = QSplitter()
+        top_layout.addWidget(self._create_center())
+        top_layout.addWidget(self._create_right())
+        self.layout.addWidget(self.search_line)
+        self.layout.addWidget(top_layout, 1)
         self.layout.addLayout(self._create_status_layout())
 
         self.setCentralWidget(widget)
 
     def _create_center(self):
-        self._create_list_widget()
-        self._create_search_line()
         res = QWidget()
         layout = QVBoxLayout(res)
         res.setAutoFillBackground(True)
@@ -66,9 +70,7 @@ class CollectionWindow(QMainWindow):
         res.setContentsMargins(2, 0, 2, 0)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        layout.addWidget(self.search_line)
         layout.addWidget(self.list_widget)
-        layout.addWidget(self._create_action_widget())
         return res
 
     def _create_search_line(self):
@@ -86,6 +88,33 @@ class CollectionWindow(QMainWindow):
         self.proxy = QSortFilterProxyModel(self)
         self.proxy.setSourceModel(self.search_model)
         self.list_widget = SolutionView(self)
+        self.list_widget.selectionModel().selectionChanged.connect(self._update_focus_solution)
+
+    def _update_focus_solution(self):
+        item = self._get_currently_selected_item()
+        if item:
+            solution = item.action.solution
+            if "title" in solution["setup"] and solution["setup"]["title"]:
+                self.selected_solution_title.setText(solution["setup"]["title"])
+            else:
+                self.selected_solution_title.setText(item.solution_coordinates)
+            if "description" in solution["setup"] and solution["setup"]["description"]:
+                self.selected_solution_description.setText(solution["setup"]["description"])
+            if "cite" in solution["setup"] and solution["setup"]["cite"]:
+                citations = ""
+                for citation in solution["setup"]["cite"]:
+                    citations += citation["text"] + "\n"
+                    if "url" in citation:
+                        citations += citation["url"] + "\n"
+                self.selected_solution_cite.setText(citations)
+            else:
+                self.selected_solution_cite.setText("")
+            self.run_btn.setVisible(True)
+        else:
+            self.selected_solution_title.setText("")
+            self.selected_solution_description.setText("")
+            self.selected_solution_cite.setText("")
+            self.run_btn.setVisible(False)
 
     def _create_status_layout(self):
         status_layout = QHBoxLayout()
@@ -130,45 +159,55 @@ class CollectionWindow(QMainWindow):
         action_widget = QWidget()
         action_layout = QHBoxLayout(action_widget)
         action_layout.setContentsMargins(0, 0, 0, 0)
-        run_btn = create_btn(self, self.run_action, "Run", "Enter")
-        run_btn.setMinimumWidth(100)
-        run_btn.setAutoDefault(True)
-        run_btn.setDefault(True)
-        self.search_line.returnPressed.connect(run_btn.toggle)
-        action_layout.addWidget(run_btn)
-        self.return_pressed.connect(run_btn.keyPressEvent)
+        self.run_btn = create_btn(self, self.run_action, "Run", "Enter")
+        self.run_btn.setMinimumWidth(100)
+        self.run_btn.setAutoDefault(True)
+        self.run_btn.setDefault(True)
+        self.search_line.returnPressed.connect(self.run_btn.toggle)
+        action_layout.addWidget(self.run_btn)
+        self.return_pressed.connect(self.run_btn.keyPressEvent)
         self.esc_pressed.connect(self.close)
         action_widget.setContentsMargins(0, 2, 0, 0)
         return action_widget
 
-    @staticmethod
-    def _create_header():
-        res = QHBoxLayout()
-        res.setContentsMargins(10, 0, 10, 10)
-        logo = QLabel("logo")
-        data = pkgutil.get_data('album.gui.resources', 'album-m-200.png')
-        pixmap = QPixmap()
-        pixmap.loadFromData(data, 'PNG')
-        logo.setPixmap(pixmap)
-        text = QLabel("Welcome to your Album collection.\nPlease type to filter your solutions.")
-        text.setWordWrap(True)
-        text.setContentsMargins(7, 0, 0, 0)
-        res.addWidget(logo)
-        res.addWidget(text, 1)
-        return res
+    def _create_right(self):
+        res_w = QWidget()
+        res_w.setFixedWidth(270)
+        res = QVBoxLayout(res_w)
+        res.setContentsMargins(10, 10, 10, 0)
+
+        self.selected_solution_title = QLabel("")
+        self.selected_solution_title.setWordWrap(True)
+        font = self.selected_solution_title.font()
+        font.setBold(True)
+        self.selected_solution_title.setFont(font)
+
+        self.selected_solution_description = QLabel("No description provided.")
+        self.selected_solution_description.setWordWrap(True)
+
+        self.selected_solution_cite = QLabel("")
+        self.selected_solution_cite.setWordWrap(True)
+
+        res.addWidget(self.selected_solution_title)
+        res.addWidget(self.selected_solution_description)
+        res.addWidget(self.selected_solution_cite)
+        res.addStretch()
+        res.addWidget(self._create_action_widget())
+        self._update_focus_solution()
+        return res_w
 
     @staticmethod
     def _create_status(title):
         label = QLabel("%s" % title)
         font = get_monospace_font()
-        font.setPointSize(label.font().pointSize()*0.93)
+        font.setPointSize(int(label.font().pointSize()*0.93))
         label.setFont(font)
         return label
 
     def _create_status_with_action(self, title, actions):
         label = QPushButton("%s" % title, self)
         font = get_monospace_font()
-        font.setPointSize(label.font().pointSize()*0.93)
+        font.setPointSize(int(label.font().pointSize()*0.93))
         label.setFont(font)
         self._set_actions(label, actions)
         return label
@@ -193,13 +232,19 @@ class CollectionWindow(QMainWindow):
         return super().eventFilter(source, event)
 
     def run_action(self):
-        source_index = self.proxy.mapToSource(self.list_widget.selectedIndexes()[0])
-        item = self.search_model.item_from_index(source_index.row())
+        item = self._get_currently_selected_item()
         action = item.action
         if action.args:
             action.signal.emit(action.args)
         else:
             action.signal.emit()
+
+    def _get_currently_selected_item(self):
+        if len(self.list_widget.selectedIndexes()) > 0:
+            source_index = self.proxy.mapToSource(self.list_widget.selectedIndexes()[0])
+            item = self.search_model.item_from_index(source_index.row())
+            return item
+        return None
 
     def update_model(self):
         index = self.album_instance.get_index_as_dict()
@@ -225,6 +270,7 @@ class CollectionWindow(QMainWindow):
             if catalog["deletable"]:
                 self.deletable_catalogs.append(catalog)
 
+        actions_list.sort()
         self.search_model.set_list(actions_list)
         if self.list_widget:
             self.list_widget.update()
