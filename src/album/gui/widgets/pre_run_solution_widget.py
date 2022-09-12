@@ -91,7 +91,7 @@ class PreRunSolutionWidget(QWidget):
     def get_values(self):
         res = {}
         for name in self._widgets:
-            value = self._widgets[name].get_value()
+            value = self._widgets[name].get_wrapped_value()
             if value is not None:
                 res[name] = str(value)
         return res
