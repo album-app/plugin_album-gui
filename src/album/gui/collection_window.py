@@ -106,7 +106,12 @@ class CollectionWindow(QMainWindow):
                     citations += citation["text"] + "\n"
                     if "url" in citation:
                         citations += citation["url"] + "\n"
-                self.selected_solution_cite.setText(citations)
+                self.selected_solution_cite.setText("Credits: %s" % citations if citations else "")
+            if "solution_creators" in solution["setup"]:
+                creators = ""
+                for creator in solution["setup"]["solution_creators"]:
+                    creators += creator + "\n"
+                self.selected_solution_creator.setText("Created by %s" % creators if creators else "")
             else:
                 self.selected_solution_cite.setText("")
             self.run_btn.setVisible(True)
@@ -185,11 +190,15 @@ class CollectionWindow(QMainWindow):
         self.selected_solution_description = QLabel("No description provided.")
         self.selected_solution_description.setWordWrap(True)
 
+        self.selected_solution_creator = QLabel("")
+        self.selected_solution_creator.setWordWrap(True)
+
         self.selected_solution_cite = QLabel("")
         self.selected_solution_cite.setWordWrap(True)
 
         res.addWidget(self.selected_solution_title)
         res.addWidget(self.selected_solution_description)
+        res.addWidget(self.selected_solution_creator)
         res.addWidget(self.selected_solution_cite)
         res.addStretch()
         res.addWidget(self._create_action_widget())
