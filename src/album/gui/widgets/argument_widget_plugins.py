@@ -136,7 +136,7 @@ class BooleanWidget(AbstractWidget):
         return self.checkbox.isChecked()
 
     def set_value(self, value):
-        self.spin_box.setValue(bool(value))
+        self.checkbox.setChecked(bool(value))
 
 
 class DoubleWidget(AbstractWidget):
