@@ -160,6 +160,7 @@ class IntegerWidget(AbstractWidget):
 
     def create_value_widget(self):
         self.spin_box = QSpinBox()
+        self.spin_box.setMaximum(1000000)
         return self.spin_box
 
     def set_value(self, value):
