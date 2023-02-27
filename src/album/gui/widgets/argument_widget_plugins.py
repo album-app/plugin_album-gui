@@ -131,7 +131,7 @@ class BooleanWidget(AbstractWidget):
         return widget
 
     def get_value(self):
-        if self.unset_btn.isChecked():
+        if self.unset_btn and self.unset_btn.isChecked():
             return None
         return self.checkbox.isChecked()
 
