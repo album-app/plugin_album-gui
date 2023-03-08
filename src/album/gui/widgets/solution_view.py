@@ -1,8 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QContextMenuEvent
+from PyQt5.QtGui import QContextMenuEvent
 from PyQt5.QtWidgets import QListView, QMenu
-
-from album.gui.widgets.util import get_monospace_font
 
 
 class SolutionView(QListView):
@@ -11,9 +9,6 @@ class SolutionView(QListView):
         super().__init__()
         self.collection_widget = collection_widget
         self.setModel(self.collection_widget.proxy)
-        font = get_monospace_font()
-        font.setPointSize(self.font().pointSize())
-        self.setFont(font)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.select_first_item()
 

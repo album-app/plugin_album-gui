@@ -4,12 +4,12 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
-    QAction, QActionGroup, QSplitter
+    QAction, QActionGroup, QSplitter, QScrollArea
 from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
 from album.gui.widgets.solution_view import SolutionView
-from album.gui.widgets.util import create_btn, get_monospace_font
+from album.gui.widgets.util import create_btn
 
 
 class CollectionWindow(QMainWindow):
@@ -200,12 +200,20 @@ class CollectionWindow(QMainWindow):
 
         self.selected_solution_cite = QLabel("")
         self.selected_solution_cite.setWordWrap(True)
-
+        scroll = QScrollArea(res_w)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidgetResizable(True)
+        content_widget = QWidget(res_w)
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(2, 2, 2, 2)
+        content_layout.addWidget(self.selected_solution_description)
+        content_layout.addWidget(self.selected_solution_creator)
+        content_layout.addWidget(self.selected_solution_cite)
+        content_layout.addStretch()
+        scroll.setWidget(content_widget)
         res.addWidget(self.selected_solution_title)
-        res.addWidget(self.selected_solution_description)
-        res.addWidget(self.selected_solution_creator)
-        res.addWidget(self.selected_solution_cite)
-        res.addStretch()
+        res.addWidget(scroll)
         res.addWidget(self._create_action_widget())
         self._update_focus_solution()
         return res_w
@@ -213,16 +221,10 @@ class CollectionWindow(QMainWindow):
     @staticmethod
     def _create_status(title):
         label = QLabel("%s" % title)
-        font = get_monospace_font()
-        font.setPointSize(int(label.font().pointSize()*0.93))
-        label.setFont(font)
         return label
 
     def _create_status_with_action(self, title, actions):
         label = QPushButton("%s" % title, self)
-        font = get_monospace_font()
-        font.setPointSize(int(label.font().pointSize()*0.93))
-        label.setFont(font)
         self._set_actions(label, actions)
         return label
 
