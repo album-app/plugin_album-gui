@@ -15,9 +15,8 @@ def display_confirmation(text):
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Question)
     msg.setText("Confirmation requested")
-    msg.setInformativeText(text)
-    msg.setWindowTitle("Confirmation Requested")
-    return msg.exec_()
+    res = msg.question(None, "Confirmation Requested", text, msg.Yes | msg.No)
+    return res == msg.Yes
 
 
 def create_btn(parent, emit_slot, label, shortcut):

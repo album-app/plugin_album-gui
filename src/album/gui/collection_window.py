@@ -156,9 +156,14 @@ class CollectionWindow(QMainWindow):
         actions.addAction(add_catalog)
         for catalog in self.deletable_catalogs:
             add_catalog = QAction("Remove catalog %s" % catalog["name"])
-            add_catalog.triggered.connect(lambda: self.remove_catalog.emit(catalog))
+            add_catalog.triggered.connect(self.make_remove_catalog_action(catalog))
             actions.addAction(add_catalog)
         return actions.actions()
+
+    def make_remove_catalog_action(self, catalog):
+        def remove_catalog():
+            self.remove_catalog.emit(catalog)
+        return remove_catalog
 
     def _create_action_widget(self):
         action_widget = QWidget()

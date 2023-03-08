@@ -84,7 +84,7 @@ class AlbumGUI(QObject):
     def remove_catalog(self, catalog):
         if display_confirmation("Do you really want to remove catalog %s (%s)?" % (catalog["name"], catalog["src"])):
             try:
-                worker = Worker(self.album_instance.remove_catalog_by_src, {"catalog_src": catalog["src"]})
+                worker = Worker(self.album_instance.remove_catalog_by_name, {"catalog_src": catalog["name"]})
                 worker.handler.task_finished.connect(self.collection_changed)
                 worker.handler.new_log.connect(lambda records: self._check_log_for_error(records))
                 self.threadpool.start(worker)
