@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QFontInfo, QFont
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QLabel, QMessageBox
+from PyQt5.QtWidgets import QPushButton, QMessageBox
 
 
 def display_error(text):
@@ -8,6 +8,14 @@ def display_error(text):
     msg.setText("Error")
     msg.setInformativeText(text)
     msg.setWindowTitle("Error")
+    msg.exec_()
+
+
+def display_info(title, text):
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Information)
+    msg.setInformativeText(text)
+    msg.setWindowTitle(title)
     msg.exec_()
 
 

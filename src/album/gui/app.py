@@ -4,7 +4,7 @@ from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
 from album.gui.solution_window import SolutionWidget
-from album.gui.widgets.util import display_error, display_confirmation
+from album.gui.widgets.util import display_error, display_confirmation, display_info
 from album.gui.worker import Worker
 
 
@@ -86,6 +86,7 @@ class AlbumGUI(QObject):
             try:
                 worker = Worker(self.album_instance.remove_catalog_by_name, {"catalog_src": catalog["name"]})
                 worker.handler.task_finished.connect(self.collection_changed)
+                worker.handler.task_finished.connect(self.catalog_removed)
                 worker.handler.new_log.connect(lambda records: self._check_log_for_error(records))
                 self.threadpool.start(worker)
             except RuntimeError as e:
@@ -96,11 +97,18 @@ class AlbumGUI(QObject):
         if ok:
             try:
                 worker = Worker(self.album_instance.add_catalog, {"catalog_src": text})
+                worker.handler.task_finished.connect(self.catalog_added)
                 worker.handler.task_finished.connect(self.collection_changed)
                 self.threadpool.start(worker)
             except Exception as e:
                 self.album_instance.remove_catalog_by_src(text)
                 display_error(str(e))
+
+    def catalog_added(self):
+        display_info("Action complete", "Successfully added catalog.")
+
+    def catalog_removed(self):
+        display_info("Action complete", "Successfully removed catalog.")
 
     def _install_if_needed(self, win, solution):
         solution_data = self.album_instance.resolve(solution).database_entry()
