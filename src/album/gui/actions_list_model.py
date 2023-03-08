@@ -1,13 +1,12 @@
-import typing
 from functools import total_ordering
 
-from PyQt5.QtCore import QAbstractListModel, QModelIndex, QVariant, Qt
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
 
-class ActionsListModel(QAbstractListModel):
+class ActionsListModel(QStandardItemModel):
 
     @total_ordering
-    class ActionItem:
+    class ActionItem(QStandardItem):
         recently_used = None
         text = None
         action = None
@@ -30,31 +29,5 @@ class ActionsListModel(QAbstractListModel):
     def __init__(self, item_list=None, parent=None):
         self.item_list = item_list
         super().__init__(parent)
-
-    def set_list(self, item_list):
-        self.item_list = item_list
-        self.dataChanged.emit(self.index(0, 0), self.index(len(self.item_list), 0))
-
-    def item_from_index(self, index):
-        return self.item_list[index]
-
-    def rowCount(self, parent: QModelIndex = ...) -> int:
-        return len(self.item_list) if self.item_list else 0
-
-    def data(self, index: QModelIndex, role: int = ...) -> typing.Any:
-        if not index.isValid():
-            return QVariant()
-        if index.row() >= len(self.item_list) or index.row() < 0:
-            return QVariant()
-
-        if role == Qt.DisplayRole:
-            item = self.item_list[index.row()]
-            return item.text
-        elif role == Qt.TextAlignmentRole:
-            if index.column() == 0:
-                return QVariant(Qt.AlignLeft | Qt.AlignVCenter)
-            else:
-                return Qt.AlignCenter
-        return QVariant()
 
 # TODO implement filter model https://www.walletfox.com/course/qsortfilterproxymodelexample.php to filter e.g. by catalog

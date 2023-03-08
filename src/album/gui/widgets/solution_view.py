@@ -15,6 +15,7 @@ class SolutionView(QListView):
     def select_first_item(self):
         index = self.collection_widget.proxy.index(0, 0)
         self.setCurrentIndex(index)
+        self.scrollTo(index)
 
     def contextMenuEvent(self, e: QContextMenuEvent):
         if self.selectionModel().selection().indexes():

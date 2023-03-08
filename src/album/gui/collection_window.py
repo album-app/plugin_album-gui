@@ -1,7 +1,7 @@
 import pathlib
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
+from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent, QModelIndex
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
     QAction, QActionGroup, QSplitter, QScrollArea
@@ -258,7 +258,7 @@ class CollectionWindow(QMainWindow):
     def _get_currently_selected_item(self):
         if len(self.list_widget.selectedIndexes()) > 0:
             source_index = self.proxy.mapToSource(self.list_widget.selectedIndexes()[0])
-            item = self.search_model.item_from_index(source_index.row())
+            item = self.search_model.item(source_index.row())
             return item
         return None
 
@@ -275,9 +275,11 @@ class CollectionWindow(QMainWindow):
                 title = solution["setup"]["title"]
                 if not title:
                     title = coordinates
-                status = "x" if solution["internal"]["installed"] else " "
                 item = ActionsListModel.ActionItem()
-                item.text = "%s [%s] %s" % (status, catalog["name"], title)
+                item.setEditable(False)
+                item.setCheckState(2 if solution["internal"]["installed"] else 0)
+                item.setText("[%s] %s" % (catalog["name"], title))
+                item.text = "[%s] %s" % (catalog["name"], title)
                 item.action = CollectionWindow.Action(self.show_solution, full_coordinates, solution)
                 item.solution_coordinates = full_coordinates
                 actions_list.append(item)
@@ -287,10 +289,12 @@ class CollectionWindow(QMainWindow):
                 self.deletable_catalogs.append(catalog)
 
         actions_list.sort()
-        self.search_model.set_list(actions_list)
+        self.search_model.removeRows(0, self.search_model.rowCount())
+        for item in actions_list:
+            self.search_model.appendRow(item)
+        # self.search_model.set_list(actions_list)
         if self.list_widget:
-            self.list_widget.update()
-
+            self.list_widget.select_first_item()
         self.collection_changed.emit()
 
     def set_active(self):
