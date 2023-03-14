@@ -20,7 +20,7 @@ class SolutionView(QListView):
     def contextMenuEvent(self, e: QContextMenuEvent):
         if self.selectionModel().selection().indexes():
             source_index = self.collection_widget.proxy.mapToSource(self.selectedIndexes()[0])
-            item = self.collection_widget.search_model.item_from_index(source_index.row())
+            item = self.collection_widget.search_model.item(source_index.row(), 0)
             menu = QMenu(self)
             if item.action.solution["internal"]["installed"]:
                 uninstall_action = menu.addAction("Uninstall")
