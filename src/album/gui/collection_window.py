@@ -94,6 +94,7 @@ class CollectionWindow(QMainWindow):
         item = self._get_currently_selected_item()
         if item:
             solution = item.action.solution
+            self.selected_solution_version.setText("Version " + solution["setup"]["version"])
             if "title" in solution["setup"] and solution["setup"]["title"]:
                 self.selected_solution_title.setText(solution["setup"]["title"])
             else:
@@ -117,6 +118,7 @@ class CollectionWindow(QMainWindow):
             self.run_btn.setVisible(True)
         else:
             self.selected_solution_title.setText("")
+            self.selected_solution_version.setText("")
             self.selected_solution_description.setText("")
             self.selected_solution_cite.setText("")
             self.run_btn.setVisible(False)
@@ -187,6 +189,7 @@ class CollectionWindow(QMainWindow):
         res.setContentsMargins(10, 10, 10, 0)
 
         self.selected_solution_title = QLabel("")
+        self.selected_solution_version = QLabel("")
         self.selected_solution_title.setWordWrap(True)
         font = self.selected_solution_title.font()
         font.setBold(True)
@@ -213,6 +216,7 @@ class CollectionWindow(QMainWindow):
         content_layout.addStretch()
         scroll.setWidget(content_widget)
         res.addWidget(self.selected_solution_title)
+        res.addWidget(self.selected_solution_version)
         res.addWidget(scroll)
         res.addWidget(self._create_action_widget())
         self._update_focus_solution()
