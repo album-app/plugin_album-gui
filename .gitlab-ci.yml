@@ -364,6 +364,12 @@ prepare release:
   artifacts:
     reports:
       dotenv: variables.env
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 
 gitlab release:
@@ -382,6 +388,12 @@ gitlab release:
     description: 'Created using the release-cli'
     tag_name: '$TAG'
     ref: '$CI_COMMIT_SHA'
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 
 gitlab pypi deploy:
@@ -399,6 +411,12 @@ gitlab pypi deploy:
     - pip install twine
     - python setup.py sdist bdist_wheel
     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 pypi deploy:
   image: python:latest
@@ -417,6 +435,12 @@ pypi deploy:
     - pip install twine
     - python setup.py sdist bdist_wheel
     - TWINE_PASSWORD=$PYPI_DEPLOY_TOKEN TWINE_USERNAME=$PYPI_DEPLOY_USER python -m twine upload --repository-url https://upload.pypi.org/legacy/  dist/*
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 
 # Linux Tests
