@@ -1,13 +1,14 @@
 import pathlib
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent, QModelIndex
+from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
-    QAction, QActionGroup, QSplitter, QScrollArea
+    QAction, QActionGroup, QSplitter, QScrollArea, QDialog
 from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
+from album.gui.dialog.update_dialog import UpdateDialog
 from album.gui.widgets.solution_view import SolutionView
 from album.gui.widgets.util import create_btn
 
@@ -21,7 +22,14 @@ class CollectionWindow(QMainWindow):
     install_solution = pyqtSignal(str)
     remove_catalog = pyqtSignal(dict)
     add_new_catalog = pyqtSignal(QWidget)
+    update_catalog_dialog = pyqtSignal(bool)
+    update_catalogs = pyqtSignal(list)
+    update_all_catalogs = pyqtSignal()
     collection_changed = pyqtSignal()
+
+    update_running = pyqtSignal(bool)
+    upgrade_running = pyqtSignal(bool)
+    available_updates_changed = pyqtSignal(bool)
 
     class Action:
         def __init__(self, signal, args=None, solution=None):
@@ -36,6 +44,7 @@ class CollectionWindow(QMainWindow):
         self.all_catalogs = []
         self.deletable_catalogs = []
         self.list_widget = None
+        self.update_catalog_dialog.connect(self._choose_update_catalogs)
 
         self.search_model = ActionsListModel()
         # self.search_proxy_model = ActionFilterProxyModel()
@@ -156,6 +165,9 @@ class CollectionWindow(QMainWindow):
         add_catalog = QAction("Add catalog")
         add_catalog.triggered.connect(lambda: self.add_new_catalog.emit(self))
         actions.addAction(add_catalog)
+        update_catalog = QAction("Update catalog(s)")
+        update_catalog.triggered.connect(self.update_catalog_dialog)
+        actions.addAction(update_catalog)
         for catalog in self.deletable_catalogs:
             add_catalog = QAction("Remove catalog %s" % catalog["name"])
             add_catalog.triggered.connect(self.make_remove_catalog_action(catalog))
@@ -300,6 +312,14 @@ class CollectionWindow(QMainWindow):
         if self.list_widget:
             self.list_widget.select_first_item()
         self.collection_changed.emit()
+
+    def _choose_update_catalogs(self, pressed):
+        options = []
+        for catalog in self.deletable_catalogs:
+            options.append(catalog["name"])
+        dialog = UpdateDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def set_active(self):
         pass

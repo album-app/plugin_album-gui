@@ -136,6 +136,8 @@ class BooleanWidget(AbstractWidget):
         return self.checkbox.isChecked()
 
     def set_value(self, value):
+        if value == '0' or value == 'False' or value == 'false':
+            value = False
         self.checkbox.setChecked(bool(value))
 
 

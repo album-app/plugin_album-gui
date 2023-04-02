@@ -33,6 +33,7 @@ class PreRunSolutionWidget(QWidget):
         self.layout.addWidget(self.scroll)
         self.layout.addWidget(self.required_warning)
         self.layout.addWidget(self._create_actions_box())
+        self.required_warning.setVisible(False)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self._widgets = {}
         self._required = []
@@ -105,9 +106,13 @@ class PreRunSolutionWidget(QWidget):
         if missing_values:
             self.required_warning.setVisible(True)
             self._highlight_missing_values(missing_values)
+            self.required_warning.update()
+            self.required_warning.parent().update()
+            self.layout.update()
             return False
         else:
             self.required_warning.setVisible(False)
+            self.layout.update()
         return True
 
     def _highlight_missing_values(self, values):
@@ -124,7 +129,7 @@ class PreRunSolutionWidget(QWidget):
         res = QLabel("Please provide the missing required arguments.")
         res.setWordWrap(True)
         res.setStyleSheet("color: red;")
-        res.setVisible(False)
+        res.setMargin(5)
         return res
 
     def set_active(self):

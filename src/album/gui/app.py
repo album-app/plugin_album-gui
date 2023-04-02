@@ -34,6 +34,8 @@ class AlbumGUI(QObject):
             win.uninstall_solution.connect(lambda sol: self.uninstall_solution(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
+            win.update_catalogs.connect(self.update_catalogs)
+            win.update_all_catalogs.connect(self.update_all_catalogs)
             self.collection_changed.connect(win.update_model)
         win.show()
         self.app.exec()
@@ -104,8 +106,33 @@ class AlbumGUI(QObject):
                 self.album_instance.remove_catalog_by_src(text)
                 display_error(str(e))
 
+    def update_catalogs(self, catalogs):
+        for catalog in catalogs:
+            try:
+                worker = Worker(self.album_instance.update, {"catalog_name": catalog})
+                worker.handler.task_finished.connect(lambda: self.catalog_updated(catalog))
+                worker.handler.task_finished.connect(self.collection_changed)
+                self.threadpool.start(worker)
+            except Exception as e:
+                display_error(str(e))
+
+    def update_all_catalogs(self):
+        try:
+            worker = Worker(self.album_instance.update, {"catalog_name": None})
+            worker.handler.task_finished.connect(self.all_catalogs_updated)
+            worker.handler.task_finished.connect(self.collection_changed)
+            self.threadpool.start(worker)
+        except Exception as e:
+            display_error(str(e))
+
     def catalog_added(self):
         display_info("Action complete", "Successfully added catalog.")
+
+    def catalog_updated(self, catalog_name):
+        display_info("Action complete", "Successfully updated catalog %s." % catalog_name)
+
+    def all_catalogs_updated(self):
+        display_info("Action complete", "Successfully updated all catalogs.")
 
     def catalog_removed(self):
         display_info("Action complete", "Successfully removed catalog.")
