@@ -44,6 +44,7 @@ class CollectionWindow(QMainWindow):
         self.all_catalogs = []
         self.deletable_catalogs = []
         self.list_widget = None
+        self.setWindowTitle("Album")
         self.update_catalog_dialog.connect(self._choose_update_catalogs)
 
         self.search_model = ActionsListModel()
