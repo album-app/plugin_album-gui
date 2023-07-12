@@ -1,4 +1,3 @@
-import json
 import unittest
 from unittest import mock
 
@@ -43,9 +42,6 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
-        mock_album.launch_gui.return_value = {
-            "id": "0"
-        }
         mock_task_manager.get_status.side_effect = [{"status": "RUNNING", "records": [
             {"msg": "heavy work....", "asctime": 0}
         ]}, {"status": "FINISHED", "records": [
@@ -58,7 +54,8 @@ class TestInteractiveGUI(unittest.TestCase):
             {"msg": "done.", "asctime": 1}
         ]}]
 
-        gui = AlbumGUI(mock_album, mock_task_manager)
+        mock_controller._task_manager = mock_task_manager
+        gui = AlbumGUI(mock_album)
         gui.launch()
         gui.dispose()
         mock_album.close()
@@ -72,9 +69,6 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
-        mock_album.launch_gui.return_value = {
-            "id": "0"
-        }
         mock_task_manager.get_status.side_effect = [{"status": "RUNNING", "records": [
             {"msg": "heavy work....", "asctime": 0}
         ]}, {"status": "FINISHED", "records": [
@@ -87,7 +81,7 @@ class TestInteractiveGUI(unittest.TestCase):
             {"msg": "done.", "asctime": 1}
         ]}]
 
-        gui = AlbumGUI(mock_album, mock_task_manager)
+        gui = AlbumGUI(mock_album)
         solution = "solution.py"
         gui.launch(solution=solution)
         gui.dispose()
