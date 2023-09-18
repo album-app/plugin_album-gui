@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QInputDialog
 from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
+from album.gui.dialog.solutions_action_dialog import SolutionsActionDialog
 from album.gui.solution_window import SolutionWidget
 from album.gui.widgets.util import display_error, display_confirmation, display_info
 from album.gui.worker import Worker
@@ -32,6 +33,7 @@ class AlbumGUI(QObject):
             win.show_solution.connect(lambda sol: self.launch_solution(sol))
             win.install_solution.connect(lambda sol: self.install_solution(sol))
             win.uninstall_solution.connect(lambda sol: self.uninstall_solution(sol))
+            win.uninstall_solutions.connect(lambda sol: self.uninstall_solutions(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
             win.update_catalogs.connect(self.update_catalogs)
@@ -78,6 +80,11 @@ class AlbumGUI(QObject):
             display_error("Cannot find solution %s." % solution)
         self.open_windows.append(win)
         win.show()
+
+    def uninstall_solutions(self, actions):
+        dialog = SolutionsActionDialog(self.album_instance, actions, "Uninstall solution versions", "Would you like to uninstall the following versions of this solution?", "Uninstall")
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def _widget_finished(self, widget):
         widget.set_solution_finished()
@@ -147,6 +154,7 @@ class AlbumGUI(QObject):
             self._show_pre_run(win, solution, solution_data)
 
     def _install(self, win, solution, solution_data):
+        win.set_show_solution(solution_data)
         win.get_install_widget().continue_signal.connect(lambda: self._show_pre_run(win, solution, solution_data))
         win.show_install()
 

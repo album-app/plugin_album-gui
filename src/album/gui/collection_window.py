@@ -2,13 +2,16 @@ import pathlib
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
-from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont, QIcon, QColor
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
-    QAction, QActionGroup, QSplitter, QScrollArea, QDialog
+    QAction, QActionGroup, QSplitter, QScrollArea, QComboBox
 from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
-from album.gui.dialog.update_dialog import UpdateDialog
+from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
+from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
+from album.gui.solution_util import installed, group_solutions_by_version, solution_version, solution_coordinates, \
+    full_coordinates, get_newest_prefer_installed
 from album.gui.widgets.solution_view import SolutionView
 from album.gui.widgets.util import create_btn
 
@@ -19,10 +22,12 @@ class CollectionWindow(QMainWindow):
     esc_pressed = pyqtSignal(QKeyEvent)
     show_solution = pyqtSignal(str)
     uninstall_solution = pyqtSignal(str)
+    uninstall_solutions = pyqtSignal(list)
     install_solution = pyqtSignal(str)
     remove_catalog = pyqtSignal(dict)
     add_new_catalog = pyqtSignal(QWidget)
     update_catalog_dialog = pyqtSignal(bool)
+    update_solution_dialog = pyqtSignal(bool)
     update_catalogs = pyqtSignal(list)
     update_all_catalogs = pyqtSignal()
     collection_changed = pyqtSignal()
@@ -31,21 +36,28 @@ class CollectionWindow(QMainWindow):
     upgrade_running = pyqtSignal(bool)
     available_updates_changed = pyqtSignal(bool)
 
+
+
     class Action:
-        def __init__(self, signal, args=None, solution=None):
+        def __init__(self, signal, args=None, versions=None, catalog=None):
             self.signal = signal
             self.args = args
-            self.solution = solution
+            self.versions = versions
+            self.catalog = catalog
 
     def __init__(self, album_instance: Album, parent=None):
         super(CollectionWindow, self).__init__(parent)
         self.selected_solution = None
+        self.selected_solution_version = None
         self.album_instance: Album = album_instance
         self.all_catalogs = []
         self.deletable_catalogs = []
         self.list_widget = None
         self.setWindowTitle("Album")
+        self.installed_icon = self.create_icon_from_unicode(chr(0x2713), "#19c18f", size=12)
+        self.notinstalled_icon = self.create_icon_from_unicode(chr(0x2717), "#ff6c87", size=12)
         self.update_catalog_dialog.connect(self._choose_update_catalogs)
+        self.update_solution_dialog.connect(self._choose_update_solutions)
 
         self.search_model = ActionsListModel()
         # self.search_proxy_model = ActionFilterProxyModel()
@@ -103,24 +115,57 @@ class CollectionWindow(QMainWindow):
     def _update_focus_solution(self):
         item = self._get_currently_selected_item()
         if item:
-            solution = item.action.solution
-            self.selected_solution_version.setText("Version " + solution["setup"]["version"])
-            if "title" in solution["setup"] and solution["setup"]["title"]:
-                self.selected_solution_title.setText(solution["setup"]["title"])
+            versions = item.action.versions
+            self.version_combo.clear()
+
+            for idx, version in enumerate(versions):
+                self.version_combo.addItem(solution_version(version))
+                if installed(version):
+                    self.version_combo.setItemIcon(idx, self.installed_icon)
+                else:
+                    self.version_combo.setItemIcon(idx, self.notinstalled_icon)
+            # self.version_combo.addItems(solution_version(version) for version in versions)
+            # self.version_combo.setEnabled(len(versions) > 1)
+            self.selected_solution = get_newest_prefer_installed(versions)
+            self.selected_solution_version = solution_version(self.selected_solution)
+            self.version_combo.setCurrentText(self.selected_solution_version)
+            self._update_focus_solution_version()
+
+    @staticmethod
+    def create_icon_from_unicode(unicode_char, color='black', font_name='Arial', size=16):
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setPen(QColor(color))
+        painter.setFont(QFont(font_name, size))
+        painter.drawText(0, 0, size, size, Qt.AlignCenter, unicode_char)
+        painter.end()
+        return QIcon(pixmap)
+
+    def _update_focus_solution_version(self):
+        if self.selected_solution:
+            self.selected_solution_coordinates.setText(solution_coordinates(self.selected_solution))
+            if "title" in self.selected_solution["setup"] and self.selected_solution["setup"]["title"]:
+                self.selected_solution_title.setText(self.selected_solution["setup"]["title"])
+                self.selected_solution_title.setVisible(True)
             else:
-                self.selected_solution_title.setText(item.solution_coordinates)
-            if "description" in solution["setup"] and solution["setup"]["description"]:
-                self.selected_solution_description.setText(solution["setup"]["description"])
-            if "cite" in solution["setup"] and solution["setup"]["cite"]:
+                self.selected_solution_title.setVisible(False)
+            if "description" in self.selected_solution["setup"] and self.selected_solution["setup"]["description"]:
+                self.selected_solution_description.setText(self.selected_solution["setup"]["description"])
+            else:
+                self.selected_solution_description.setText("")
+            if "cite" in self.selected_solution["setup"] and self.selected_solution["setup"]["cite"]:
                 citations = ""
-                for citation in solution["setup"]["cite"]:
+                for citation in self.selected_solution["setup"]["cite"]:
                     citations += citation["text"] + "\n"
                     if "url" in citation:
                         citations += citation["url"] + "\n"
                 self.selected_solution_cite.setText("Credits: %s" % citations if citations else "")
-            if "solution_creators" in solution["setup"]:
+            else:
+                self.selected_solution_cite.setText("")
+            if "solution_creators" in self.selected_solution["setup"]:
                 creators = ""
-                for creator in solution["setup"]["solution_creators"]:
+                for creator in self.selected_solution["setup"]["solution_creators"]:
                     creators += creator + "\n"
                 self.selected_solution_creator.setText("Created by %s" % creators if creators else "")
             else:
@@ -128,7 +173,6 @@ class CollectionWindow(QMainWindow):
             self.run_btn.setVisible(True)
         else:
             self.selected_solution_title.setText("")
-            self.selected_solution_version.setText("")
             self.selected_solution_description.setText("")
             self.selected_solution_cite.setText("")
             self.run_btn.setVisible(False)
@@ -139,9 +183,9 @@ class CollectionWindow(QMainWindow):
             "catalogs: %s" % len(self.album_instance.get_catalogs_as_dict()["catalogs"]), self._get_catalog_actions())
 
         solutions_status = self._create_status(
-            "solutions: %s" % self._get_solution_count(self.album_instance.get_index_as_dict()))
-        installed_status = self._create_status(
-            "installed: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict()))
+            "solution versions total: %s" % self._get_solution_count(self.album_instance.get_index_as_dict()))
+        installed_status = self._create_status_with_action(
+            "installed versions: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict()), self._get_update_solution_actions())
         # running_status = self._create_status("running: 0")
         # updates_status = self._create_status("updates: 0")
         self.collection_changed.connect(lambda: catalog_status.setText(
@@ -151,10 +195,13 @@ class CollectionWindow(QMainWindow):
             "solutions: %s" % self._get_solution_count(self.album_instance.get_index_as_dict())))
         self.collection_changed.connect(lambda: installed_status.setText(
             "installed: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict())))
+        # update_btn = self._create_status_with_action("update", self._get_update_actions())
+
         status_layout.addWidget(catalog_status)
         status_layout.addWidget(solutions_status)
         status_layout.addWidget(installed_status)
         status_layout.addStretch()
+        # status_layout.addWidget(update_btn)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(10)
         # status_layout.addWidget(running_status)
@@ -173,6 +220,16 @@ class CollectionWindow(QMainWindow):
             add_catalog = QAction("Remove catalog %s" % catalog["name"])
             add_catalog.triggered.connect(self.make_remove_catalog_action(catalog))
             actions.addAction(add_catalog)
+        return actions.actions()
+
+    def _get_update_solution_actions(self):
+        actions = QActionGroup(self)
+        # update_catalog = QAction("Update catalog(s)")
+        # update_catalog.triggered.connect(self.update_catalog_dialog)
+        # actions.addAction(update_catalog)
+        update_solutions = QAction("Update solution(s)")
+        update_solutions.triggered.connect(self.update_solution_dialog)
+        actions.addAction(update_solutions)
         return actions.actions()
 
     def make_remove_catalog_action(self, catalog):
@@ -198,11 +255,16 @@ class CollectionWindow(QMainWindow):
     def _create_right(self):
         res_w = QWidget()
         res_w.setFixedWidth(270)
+
+        self.version_combo = QComboBox()
+        self.version_combo.currentIndexChanged.connect(self._update_focus_solution_version)
+
         res = QVBoxLayout(res_w)
         res.setContentsMargins(10, 10, 10, 0)
 
         self.selected_solution_title = QLabel("")
-        self.selected_solution_version = QLabel("")
+        self.selected_solution_coordinates = QLabel("")
+        self.selected_solution_coordinates.setWordWrap(True)
         self.selected_solution_title.setWordWrap(True)
         font = self.selected_solution_title.font()
         font.setBold(True)
@@ -228,8 +290,12 @@ class CollectionWindow(QMainWindow):
         content_layout.addWidget(self.selected_solution_cite)
         content_layout.addStretch()
         scroll.setWidget(content_widget)
+        combo_layout = QHBoxLayout()
+        combo_layout.addWidget(QLabel("Version: "))
+        combo_layout.addWidget(self.version_combo)
+        res.addLayout(combo_layout)
+        res.addWidget(self.selected_solution_coordinates)
         res.addWidget(self.selected_solution_title)
-        res.addWidget(self.selected_solution_version)
         res.addWidget(scroll)
         res.addWidget(self._create_action_widget())
         self._update_focus_solution()
@@ -285,20 +351,13 @@ class CollectionWindow(QMainWindow):
         self.all_catalogs = []
         self.deletable_catalogs = []
         for catalog in index["catalogs"]:
-            for solution in catalog["solutions"]:
-                coordinates = "%s:%s:%s" % (
-                    solution["setup"]["group"], solution["setup"]["name"], solution["setup"]["version"])
-                full_coordinates = "%s:%s" % (catalog["name"], coordinates)
-                title = solution["setup"]["title"]
-                if not title:
-                    title = coordinates
-                item = ActionsListModel.ActionItem()
-                item.setEditable(False)
-                item.setCheckState(2 if solution["internal"]["installed"] else 0)
-                item.setText("[%s] %s" % (catalog["name"], title))
-                item.text = "[%s] %s" % (catalog["name"], title)
-                item.action = CollectionWindow.Action(self.show_solution, full_coordinates, solution)
-                item.solution_coordinates = full_coordinates
+
+            solutions = group_solutions_by_version(catalog)
+
+            for solution_key in solutions:
+                versions = solutions[solution_key]
+                solution = get_newest_prefer_installed(versions)
+                item = self._create_action_item(catalog, solution, solution_key, versions)
                 actions_list.append(item)
         for catalog in index["catalogs"]:
             self.all_catalogs.append(catalog)
@@ -314,11 +373,33 @@ class CollectionWindow(QMainWindow):
             self.list_widget.select_first_item()
         self.collection_changed.emit()
 
+    def _create_action_item(self, catalog, solution, solution_key, versions):
+        coordinates = solution_coordinates(solution)
+        if "title" in solution["setup"]:
+            title = solution["setup"]["title"]
+            if not title:
+                title = coordinates
+        else:
+            title = coordinates
+        item = ActionsListModel.ActionItem()
+        item.setEditable(False)
+        item.setCheckState(2 if installed(solution) else 0)
+        item.setText("[%s] %s" % (catalog["name"], title))
+        item.text = "[%s] %s" % (catalog["name"], title)
+        item.action = CollectionWindow.Action(self.show_solution, full_coordinates(solution, catalog), versions, catalog)
+        item.solution_key = solution_key
+        return item
+
     def _choose_update_catalogs(self, pressed):
         options = []
         for catalog in self.deletable_catalogs:
             options.append(catalog["name"])
-        dialog = UpdateDialog(options, self.album_instance)
+        dialog = UpdateCatalogDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
+
+    def _choose_update_solutions(self, pressed):
+        dialog = UpdateSolutionDialog(self.album_instance)
         dialog.upgradeDone.connect(self.collection_changed)
         dialog.exec_()
 
@@ -339,5 +420,5 @@ class CollectionWindow(QMainWindow):
     def _get_installed_solution_count(index_dict):
         count = 0
         for catalog in index_dict["catalogs"]:
-            count += len([solution for solution in catalog["solutions"] if solution["internal"]["installed"]])
+            count += len([solution for solution in catalog["solutions"] if installed(solution)])
         return count

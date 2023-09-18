@@ -83,7 +83,7 @@ class SolutionWidget(QMainWindow):
         new_header.setLayout(layout)
         solution_setup = solution.setup()
         if "title" in solution_setup and solution_setup["title"]:
-            title = solution_setup["title"]
+            title = "%s (version %s)" % (solution_setup["title"], solution_setup["version"])
         else:
             title = "%s:%s:%s" % (solution_setup["group"], solution_setup["name"], solution_setup["version"])
         title_label = QLabel(title)

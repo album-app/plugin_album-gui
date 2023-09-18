@@ -1,4 +1,6 @@
 import sys
+from time import sleep
+from unittest.mock import create_autospec
 
 from PyQt5.QtCore import pyqtSignal, QThread
 from PyQt5.QtWidgets import QDialog, QApplication, QVBoxLayout, QLabel, QProgressBar, \
@@ -8,7 +10,7 @@ from album.api import Album
 from album.gui.dialog.checklist_dialog import CheckListDialog
 
 
-class UpdateDialog(CheckListDialog):
+class UpdateCatalogDialog(CheckListDialog):
     upgrade_running = pyqtSignal(bool)
     upgradeRunning = pyqtSignal(bool)
     upgradeDone = pyqtSignal()
@@ -81,7 +83,9 @@ class UpdateProcessThread(QThread):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     options = ["Option " + str(i) for i in range(1, 51)]
-    dialog = UpdateDialog(options, None)
+    album = create_autospec(Album)
+    album.upgrade = lambda x: sleep(1)
+    dialog = UpdateCatalogDialog(options, album)
     if dialog.exec_() == QDialog.Accepted:
         all_checked, checked_items = dialog.getCheckedItems()
         print("All choices activated: ", all_checked)
