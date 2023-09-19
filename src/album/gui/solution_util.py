@@ -1,6 +1,7 @@
 from copy import deepcopy
 from distutils.version import LooseVersion
 
+import packaging.version
 from album.api import Album
 
 from album.gui.dialog.update_action_item import UpdateActionItem, UpdateAction
@@ -35,7 +36,8 @@ def group_solutions_by_version(catalog):
             solutions[coordinates] = [solution]
     for solution_key in solutions:
         versioned_solutions = solutions[solution_key]
-        solutions[solution_key] = sorted(versioned_solutions, key=lambda x: LooseVersion(x["setup"]['version']))
+
+        solutions[solution_key] = sorted(versioned_solutions, key=lambda x: packaging.version.Version(x["setup"]['version'].replace("-SNAPSHOT", ".dev0")))
     return solutions
 
 

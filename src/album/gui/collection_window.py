@@ -1,12 +1,17 @@
 import pathlib
+from importlib import metadata
+from importlib.metadata import PackageNotFoundError
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
 from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont, QIcon, QColor
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
-    QAction, QActionGroup, QSplitter, QScrollArea, QComboBox
+    QAction, QActionGroup, QSplitter, QComboBox, QStyle, QMessageBox, QTextEdit
 from album.api import Album
+from album.core.model.default_values import DefaultValues
+from packaging.version import Version
 
+import album
 from album.gui.actions_list_model import ActionsListModel
 from album.gui.solution_util import installed, group_solutions_by_version, solution_version, solution_coordinates, \
     full_coordinates, get_newest_prefer_installed
@@ -33,8 +38,6 @@ class CollectionWindow(QMainWindow):
     upgrade_running = pyqtSignal(bool)
     available_updates_changed = pyqtSignal(bool)
 
-
-
     class Action:
         def __init__(self, signal, args=None, versions=None, catalog=None):
             self.signal = signal
@@ -51,6 +54,10 @@ class CollectionWindow(QMainWindow):
         self.deletable_catalogs = []
         self.list_widget = None
         self.setWindowTitle("Album")
+        try:
+            self.album_api_version = metadata.version("album-runner")
+        except PackageNotFoundError:
+            self.album_api_version = metadata.version("album-solution-api")
         self.installed_icon = self.create_icon_from_unicode(chr(0x2713), "#19c18f", size=12)
         self.notinstalled_icon = self.create_icon_from_unicode(chr(0x2717), "#ff6c87", size=12)
 
@@ -139,7 +146,20 @@ class CollectionWindow(QMainWindow):
 
     def _update_focus_solution_version(self):
         if self.selected_solution:
+            if self.version_combo.currentText():
+                self.selected_solution_version = self.version_combo.currentText()
+
+                item = self._get_currently_selected_item()
+                versions = item.action.versions
+                version_match = [version for version in versions if solution_version(version) == self.selected_solution_version]
+                self.selected_solution = version_match[0]
+                item.action.args = full_coordinates(self.selected_solution, item.action.catalog)
+
+            self.selected_solution_group.setText(self.selected_solution["setup"]["group"])
+            self.selected_solution_name.setText(self.selected_solution["setup"]["name"])
             self.selected_solution_coordinates.setText(solution_coordinates(self.selected_solution))
+
+            self.solution_api_warning.setVisible(Version(self.album_api_version) < Version(self.selected_solution["setup"]["album_api_version"]))
             if "title" in self.selected_solution["setup"] and self.selected_solution["setup"]["title"]:
                 self.selected_solution_title.setText(self.selected_solution["setup"]["title"])
                 self.selected_solution_title.setVisible(True)
@@ -155,21 +175,16 @@ class CollectionWindow(QMainWindow):
                     citations += citation["text"] + "\n"
                     if "url" in citation:
                         citations += citation["url"] + "\n"
-                self.selected_solution_cite.setText("Credits: %s" % citations if citations else "")
-            else:
-                self.selected_solution_cite.setText("")
+                self.selected_solution_description.append("\nCredits: %s" % citations if citations else "")
             if "solution_creators" in self.selected_solution["setup"]:
                 creators = ""
                 for creator in self.selected_solution["setup"]["solution_creators"]:
                     creators += creator + "\n"
-                self.selected_solution_creator.setText("Created by %s" % creators if creators else "")
-            else:
-                self.selected_solution_cite.setText("")
+                self.selected_solution_description.append("\nSolution file written by %s" % creators if creators else "")
             self.run_btn.setVisible(True)
         else:
             self.selected_solution_title.setText("")
             self.selected_solution_description.setText("")
-            self.selected_solution_cite.setText("")
             self.run_btn.setVisible(False)
 
     def _create_status_layout(self):
@@ -180,7 +195,7 @@ class CollectionWindow(QMainWindow):
         solutions_status = self._create_status(
             "solution versions total: %s" % self._get_solution_count(self.album_instance.get_index_as_dict()))
         installed_status = self._create_status_with_action(
-            "installed versions: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict()), self._get_update_solution_actions())
+            "installed solution versions: %s" % self._get_installed_solution_count(self.album_instance.get_index_as_dict()), self._get_update_solution_actions())
         # running_status = self._create_status("running: 0")
         # updates_status = self._create_status("updates: 0")
         self.collection_changed.connect(lambda: catalog_status.setText(
@@ -196,7 +211,7 @@ class CollectionWindow(QMainWindow):
         status_layout.addWidget(solutions_status)
         status_layout.addWidget(installed_status)
         status_layout.addStretch()
-        # status_layout.addWidget(update_btn)
+        status_layout.addWidget(QLabel("Album v%s, max. album_api_version %s" % (album.core.__version__, self.album_api_version)))
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(10)
         # status_layout.addWidget(running_status)
@@ -258,43 +273,56 @@ class CollectionWindow(QMainWindow):
         res.setContentsMargins(10, 10, 10, 0)
 
         self.selected_solution_title = QLabel("")
+        self.selected_solution_group = QLabel("")
+        self.selected_solution_name = QLabel("")
         self.selected_solution_coordinates = QLabel("")
+        self.solution_api_warning = QPushButton("Warning: Potential incompatibility")
+        self.solution_api_warning.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxWarning))
+        self.solution_api_warning.clicked.connect(self.show_warning_dialog)
+
         self.selected_solution_coordinates.setWordWrap(True)
         self.selected_solution_title.setWordWrap(True)
         font = self.selected_solution_title.font()
         font.setBold(True)
         self.selected_solution_title.setFont(font)
 
-        self.selected_solution_description = QLabel("No description provided.")
-        self.selected_solution_description.setWordWrap(True)
-
-        self.selected_solution_creator = QLabel("")
-        self.selected_solution_creator.setWordWrap(True)
-
-        self.selected_solution_cite = QLabel("")
-        self.selected_solution_cite.setWordWrap(True)
-        scroll = QScrollArea(res_w)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setWidgetResizable(True)
+        self.selected_solution_description = self.create_readonly_textedit("No description provided.")
         content_widget = QWidget(res_w)
         content_layout = QVBoxLayout(content_widget)
         content_layout.setContentsMargins(2, 2, 2, 2)
         content_layout.addWidget(self.selected_solution_description)
-        content_layout.addWidget(self.selected_solution_creator)
-        content_layout.addWidget(self.selected_solution_cite)
         content_layout.addStretch()
-        scroll.setWidget(content_widget)
-        combo_layout = QHBoxLayout()
-        combo_layout.addWidget(QLabel("Version: "))
-        combo_layout.addWidget(self.version_combo)
-        res.addLayout(combo_layout)
-        res.addWidget(self.selected_solution_coordinates)
+        combo_layout_version = QHBoxLayout()
+        combo_layout_version.addWidget(QLabel("Version: "))
+        combo_layout_version.addWidget(self.version_combo)
+        layout_group = QHBoxLayout()
+        layout_group.addWidget(QLabel("Group: "))
+        layout_group.addStretch()
+        layout_group.addWidget(self.selected_solution_group)
+        layout_name = QHBoxLayout()
+        layout_name.addWidget(QLabel("Name: "))
+        layout_name.addStretch()
+        layout_name.addWidget(self.selected_solution_name)
+        res.addLayout(layout_group)
+        res.addLayout(layout_name)
+        res.addLayout(combo_layout_version)
         res.addWidget(self.selected_solution_title)
-        res.addWidget(scroll)
+        res.addWidget(self.selected_solution_description)
+        res.addWidget(self.solution_api_warning)
         res.addWidget(self._create_action_widget())
         self._update_focus_solution()
         return res_w
+
+    def create_readonly_textedit(self, text):
+        textedit = QTextEdit()
+        textedit.setPlainText(text)
+        textedit.setReadOnly(True)
+        textedit.setWordWrapMode(1)  # Word wrap
+        return textedit
+
+    @staticmethod
+    def show_warning_dialog():
+        QMessageBox.warning(None, "Warning", "Your Album installation might be too old to install and run this solution. Please update your installation if you run into issues, for example by running the Album Install Wizard again. This will not uninstall or remove any existing solutions or catalogs.")
 
     @staticmethod
     def _create_status(title):
@@ -341,7 +369,6 @@ class CollectionWindow(QMainWindow):
         return None
 
     def update_model(self):
-        print("update model")
         index = self.album_instance.get_index_as_dict()
         actions_list = []
         self.all_catalogs = []
