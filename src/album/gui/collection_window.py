@@ -27,7 +27,6 @@ class CollectionWindow(QMainWindow):
     update_catalog_dialog = pyqtSignal(list)
     update_solution_dialog = pyqtSignal()
     batch_uninstall_dialog = pyqtSignal(list)
-    update_all_catalogs = pyqtSignal()
     collection_changed = pyqtSignal()
 
     update_running = pyqtSignal(bool)

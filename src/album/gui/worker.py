@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
 from album.core.api.model.task import ILogHandler
 from album.core.model.task import Task
 from album.runner import album_logging
-from album.runner.album_logging import get_active_logger, LogLevel
+from album.runner.album_logging import get_active_logger
 
 
 class Worker(QRunnable):

@@ -1,5 +1,7 @@
+from PyQt5 import Qt
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
-from PyQt5.QtWidgets import QApplication, QInputDialog
+from PyQt5.QtWidgets import QApplication, QInputDialog, QProgressDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
+    QProgressBar
 from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
@@ -39,7 +41,6 @@ class AlbumGUI(QObject):
             win.uninstall_solutions.connect(lambda sol: self.uninstall_solutions(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
-            win.update_all_catalogs.connect(self.update_all_catalogs)
             win.update_solution_dialog.connect(self.choose_update_solutions)
             win.batch_uninstall_dialog.connect(self.choose_batch_uninstall_catalogs)
             win.update_catalog_dialog.connect(self.choose_update_catalogs)
@@ -109,33 +110,36 @@ class AlbumGUI(QObject):
     def add_catalog(self, parent):
         text, ok = QInputDialog.getText(parent, 'Add catalog', 'Enter the catalog path or URL:')
         if ok:
+            progress_dialog = QDialog(parent)
+            layout = QVBoxLayout()
+            close_button = QPushButton("Close")
+            close_button.setVisible(False)
+            close_button.clicked.connect(progress_dialog.close)
+            progress_label = QLabel("Adding catalog %s.." % text)
+            layout.addWidget(progress_label)
+            progressbar = QProgressBar()
+            progressbar.setRange(0, 0)
+            layout.addWidget(progressbar)
+            layout.addWidget(close_button)
+            progress_dialog.setLayout(layout)
             try:
+
+                # Create worker
                 worker = Worker(self.album_instance.add_catalog, {"catalog_src": text})
-                worker.handler.task_finished.connect(self.catalog_added)
+
                 worker.handler.task_finished.connect(self.collection_changed)
+                worker.handler.task_finished.connect(lambda: progressbar.setVisible(False))
+                worker.handler.task_finished.connect(lambda: close_button.setVisible(True))
+                worker.handler.task_finished.connect(lambda: progress_label.setText("Successfully added catalog %s." % text))
+
+                # Start the worker
                 self.threadpool.start(worker)
+                progress_dialog.exec_()
+
             except Exception as e:
                 self.album_instance.remove_catalog_by_src(text)
                 display_error(str(e))
-
-    def update_catalogs(self, catalogs):
-        for catalog in catalogs:
-            try:
-                worker = Worker(self.album_instance.update, {"catalog_name": catalog})
-                worker.handler.task_finished.connect(lambda: self.catalog_updated(catalog))
-                worker.handler.task_finished.connect(self.collection_changed)
-                self.threadpool.start(worker)
-            except Exception as e:
-                display_error(str(e))
-
-    def update_all_catalogs(self):
-        try:
-            worker = Worker(self.album_instance.update, {"catalog_name": None})
-            worker.handler.task_finished.connect(self.all_catalogs_updated)
-            worker.handler.task_finished.connect(self.collection_changed)
-            self.threadpool.start(worker)
-        except Exception as e:
-            display_error(str(e))
+                progress_dialog.close()  # Close the progress dialog in case of error
 
     def choose_update_catalogs(self, options):
         dialog = UpdateCatalogDialog(options, self.album_instance)
@@ -151,15 +155,6 @@ class AlbumGUI(QObject):
         dialog = UpdateSolutionDialog(self.album_instance)
         dialog.upgradeDone.connect(self.collection_changed)
         dialog.exec_()
-
-    def catalog_added(self):
-        display_info("Action complete", "Successfully added catalog.")
-
-    def catalog_updated(self, catalog_name):
-        display_info("Action complete", "Successfully updated catalog %s." % catalog_name)
-
-    def all_catalogs_updated(self):
-        display_info("Action complete", "Successfully updated all catalogs.")
 
     def catalog_removed(self):
         display_info("Action complete", "Successfully removed catalog.")
