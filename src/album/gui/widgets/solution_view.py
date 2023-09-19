@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QContextMenuEvent
 from PyQt5.QtWidgets import QListView, QMenu
 
-from album.gui.solution_util import full_coordinates, installed, get_uninstall_old_versions_actions
+from album.gui.solution_util import full_coordinates, installed, get_uninstall_actions_for_version
 
 
 class SolutionView(QListView):
@@ -33,12 +33,12 @@ class SolutionView(QListView):
                 install_action.triggered.connect(
                     lambda b: self.collection_widget.install_solution.emit(full_coordinates(newest_version, item.action.catalog)))
 
-            uninstall_old_versions_actions = get_uninstall_old_versions_actions(self.collection_widget.album_instance, versions, item.action.catalog, exclude_newest=True)
+            uninstall_old_versions_actions = get_uninstall_actions_for_version(self.collection_widget.album_instance, versions, item.action.catalog, exclude_newest=True)
             if len(uninstall_old_versions_actions) > 0:
                 uninstall_old_action = menu.addAction("Uninstall old versions")
                 uninstall_old_action.triggered.connect(lambda b: self.collection_widget.uninstall_solutions.emit(uninstall_old_versions_actions))
 
-            uninstall_all_versions_actions = get_uninstall_old_versions_actions(self.collection_widget.album_instance, versions, item.action.catalog, exclude_newest=False)
+            uninstall_all_versions_actions = get_uninstall_actions_for_version(self.collection_widget.album_instance, versions, item.action.catalog, exclude_newest=False)
             if len(uninstall_all_versions_actions) > 0:
                 uninstall_action = menu.addAction("Uninstall all versions")
                 uninstall_action.triggered.connect(lambda b: self.collection_widget.uninstall_solutions.emit(uninstall_all_versions_actions))

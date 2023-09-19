@@ -4,6 +4,9 @@ from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
 from album.gui.dialog.solutions_action_dialog import SolutionsActionDialog
+from album.gui.dialog.uninstall_solutions_from_catalog_dialog import UninstallSolutionsFromCatalogDialog
+from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
+from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from album.gui.solution_window import SolutionWidget
 from album.gui.widgets.util import display_error, display_confirmation, display_info
 from album.gui.worker import Worker
@@ -36,8 +39,10 @@ class AlbumGUI(QObject):
             win.uninstall_solutions.connect(lambda sol: self.uninstall_solutions(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
-            win.update_catalogs.connect(self.update_catalogs)
             win.update_all_catalogs.connect(self.update_all_catalogs)
+            win.update_solution_dialog.connect(self.choose_update_solutions)
+            win.batch_uninstall_dialog.connect(self.choose_batch_uninstall_catalogs)
+            win.update_catalog_dialog.connect(self.choose_update_catalogs)
             self.collection_changed.connect(win.update_model)
         win.show()
         self.app.exec()
@@ -131,6 +136,21 @@ class AlbumGUI(QObject):
             self.threadpool.start(worker)
         except Exception as e:
             display_error(str(e))
+
+    def choose_update_catalogs(self, options):
+        dialog = UpdateCatalogDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
+
+    def choose_batch_uninstall_catalogs(self, options):
+        dialog = UninstallSolutionsFromCatalogDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
+
+    def choose_update_solutions(self):
+        dialog = UpdateSolutionDialog(self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def catalog_added(self):
         display_info("Action complete", "Successfully added catalog.")

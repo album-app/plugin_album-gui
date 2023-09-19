@@ -1,3 +1,4 @@
+from copy import deepcopy
 from distutils.version import LooseVersion
 
 from album.api import Album
@@ -63,10 +64,12 @@ def generate_update_actions(catalogs, actions, index=0):
             solution_actions = []
             installed_versions_not_unlaunched_parents = False
             installed_old = []
-            installed_version_is_recent = False
+            solution_used = False
             recent_version = versions[len(versions)-1]
             for idx, version in enumerate(reversed(versions)):
                 if installed(version):
+                    if was_launched(version):
+                        solution_used = True
                     # check if a parent solution was ever launched and if not, if it is the parent of a solution to be uninstalled, if yes, mark for uninstallation too
                     if is_parent(version) and not was_launched(version):
                         can_be_uninstalled = True
@@ -89,7 +92,7 @@ def generate_update_actions(catalogs, actions, index=0):
                         installed_versions_not_unlaunched_parents = True
                     if idx != 0 and not is_parent(version):
                         installed_old.append(version)
-            if not installed(recent_version):
+            if not installed(recent_version) and solution_used:
                 solution_actions.append(UpdateActionItem(UpdateAction.INSTALL, catalog, versions[-1], index))
             if installed_versions_not_unlaunched_parents:
                 for old_installation in installed_old:
@@ -103,6 +106,42 @@ def generate_update_actions(catalogs, actions, index=0):
             generate_update_actions(remaining_catalogs, actions, index + 1)
 
 
+def generate_remove_solutions_actions(album_instance: Album, catalog_names):
+    catalogs = []
+    for catalog in album_instance.get_index_as_dict()["catalogs"]:
+        if catalog["name"] in catalog_names:
+            catalog = deepcopy(catalog)
+            catalog["solutions"] = group_solutions_by_version(catalog)
+            catalogs.append(catalog)
+
+    uninstall_actions = []
+    found_action = True
+    while found_action:
+        found_action = False
+        for catalog in catalogs:
+            for solution_key in catalog["solutions"]:
+                versions = catalog["solutions"][solution_key]
+                for idx, version in enumerate(reversed(versions)):
+                    if not installed(version):
+                        continue
+                    if not is_parent(version) and version not in [v.solution for v in uninstall_actions]:
+                        found_action = True
+                        uninstall_actions.append(UpdateActionItem(UpdateAction.UNINSTALL, catalog, version))
+                    if not child_installed(album_instance, version) and version not in [v.solution for v in uninstall_actions]:
+                        found_action = True
+                        uninstall_actions.append(UpdateActionItem(UpdateAction.UNINSTALL, catalog, version))
+                    else:
+                        for child in version["internal"]["children"]:
+                            child_id = child["collection_id_child"]
+                            child_will_be_uninstalled = any(
+                                [to_be_uninstalled for to_be_uninstalled in uninstall_actions if
+                                 to_be_uninstalled.solution["internal"]["collection_id"] == child_id])
+                            if child_will_be_uninstalled and version not in [v.solution for v in uninstall_actions]:
+                                found_action = True
+                                uninstall_actions.append(UpdateActionItem(UpdateAction.UNINSTALL, catalog, version))
+    return uninstall_actions
+
+
 def get_newest_prefer_installed(versions):
     # check which is the newest installed version
     for version in reversed(versions):
@@ -112,7 +151,7 @@ def get_newest_prefer_installed(versions):
     return versions[len(versions) - 1]
 
 
-def get_uninstall_old_versions_actions(album_instance, versions, catalog, exclude_newest=False):
+def get_uninstall_actions_for_version(album_instance, versions, catalog, exclude_newest=False):
     newest_installed = get_newest_prefer_installed(versions)
     if not installed(newest_installed):
         # no versions installed

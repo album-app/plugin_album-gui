@@ -1,15 +1,16 @@
 import unittest
 from datetime import datetime
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 from album.api import Album
 
-from album.gui.solution_util import get_uninstall_old_versions_actions, group_solutions_by_version, solution_coordinates
+from album.gui.solution_util import get_uninstall_actions_for_version, group_solutions_by_version, \
+    solution_coordinates, generate_remove_solutions_actions, full_coordinates
 
 
 class TestUnitSolutionUtil(unittest.TestCase):
 
-    def test_get_uninstall_old_versions_actions(self):
+    def test_get_uninstall_actions_for_version(self):
         album_instance = create_autospec(Album)
         index = {}
         append_version(index, coordinates="catalog1:group1:name0:0.1.0", installed=True, launched=False)
@@ -18,16 +19,16 @@ class TestUnitSolutionUtil(unittest.TestCase):
         append_version(index, coordinates="catalog1:group1:name2:0.2.0", installed=False)
         catalog = index["catalogs"][0]
 
-        options_name2 = get_uninstall_old_versions_actions(album_instance,
-                                                           group_solutions_by_version(catalog)["catalog1:group1:name2"],
-                                                           catalog)
+        options_name2 = get_uninstall_actions_for_version(album_instance,
+                                                          group_solutions_by_version(catalog)["catalog1:group1:name2"],
+                                                          catalog, exclude_newest=True)
 
         self.assertEqual(0, len(options_name2))
 
         append_version(index, coordinates="catalog1:group1:name2:0.3.0", installed=True)
-        options_name2 = get_uninstall_old_versions_actions(album_instance,
-                                                           group_solutions_by_version(catalog)["catalog1:group1:name2"],
-                                                           catalog)
+        options_name2 = get_uninstall_actions_for_version(album_instance,
+                                                          group_solutions_by_version(catalog)["catalog1:group1:name2"],
+                                                          catalog, exclude_newest=True)
         self.assertEqual(1, len(options_name2))
         self.assertEqual("group1:name2:0.1.0", solution_coordinates(options_name2[0].solution))
 
@@ -36,11 +37,45 @@ class TestUnitSolutionUtil(unittest.TestCase):
         append_version(index, coordinates="catalog1:group1:name2:0.1.0", parent="catalog1:group1:name0:0.1.0", installed=True)
         catalog = index["catalogs"][0]
 
-        options_name2 = get_uninstall_old_versions_actions(album_instance,
-                                                           group_solutions_by_version(catalog)["catalog1:group1:name2"],
-                                                           catalog)
+        options_name2 = get_uninstall_actions_for_version(album_instance,
+                                                          group_solutions_by_version(catalog)["catalog1:group1:name2"],
+                                                          catalog, exclude_newest=True)
 
         self.assertEqual(0, len(options_name2))
+
+    @patch("album.gui.solution_util.child_installed", return_value=True)
+    def test_generate_remove_solutions_actions(self, child_installed_mock):
+        album_instance = create_autospec(Album)
+        index = {}
+        append_version(index, coordinates="catalog1:group1:name0:0.1.0", installed=True, launched=False)
+        append_version(index, coordinates="catalog1:group1:name0:0.2.0", installed=False)
+        append_version(index, coordinates="catalog1:group1:name2:0.1.0", parent="catalog1:group1:name0:0.1.0", installed=True)
+        append_version(index, coordinates="catalog1:group1:name2:0.2.0", installed=False)
+        album_instance.get_index_as_dict.return_value = index
+        
+        catalogs = ["catalog1"]
+
+        remove_actions = generate_remove_solutions_actions(album_instance, catalogs)
+        self.assertEqual(2, len(remove_actions))
+        self.assertEqual("group1:name2:0.1.0", solution_coordinates(remove_actions[0].solution))
+        self.assertEqual("group1:name0:0.1.0", solution_coordinates(remove_actions[1].solution))
+
+        index = {}
+        append_version(index, coordinates="catalog1:group1:name0:0.1.0", installed=True, launched=False)
+        append_version(index, coordinates="catalog1:group1:name0:0.2.0", installed=True)
+        append_version(index, coordinates="catalog1:group1:name2:0.1.0", parent="catalog1:group1:name0:0.1.0", installed=True)
+        append_version(index, coordinates="catalog1:group1:name2:0.2.0", installed=True)
+        album_instance.get_index_as_dict.return_value = index
+
+        catalogs = ["catalog1"]
+
+        remove_actions = generate_remove_solutions_actions(album_instance, catalogs)
+
+        self.assertEqual(4, len(remove_actions))
+        self.assertEqual("group1:name0:0.2.0", solution_coordinates(remove_actions[0].solution))
+        self.assertEqual("group1:name2:0.2.0", solution_coordinates(remove_actions[1].solution))
+        self.assertEqual("group1:name2:0.1.0", solution_coordinates(remove_actions[2].solution))
+        self.assertEqual("group1:name0:0.1.0", solution_coordinates(remove_actions[3].solution))
 
 
 def find_solution_by_coordinates(catalog_id, group, name, version, solutions):

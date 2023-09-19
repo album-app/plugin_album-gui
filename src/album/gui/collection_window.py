@@ -8,8 +8,6 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget
 from album.api import Album
 
 from album.gui.actions_list_model import ActionsListModel
-from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
-from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from album.gui.solution_util import installed, group_solutions_by_version, solution_version, solution_coordinates, \
     full_coordinates, get_newest_prefer_installed
 from album.gui.widgets.solution_view import SolutionView
@@ -26,9 +24,9 @@ class CollectionWindow(QMainWindow):
     install_solution = pyqtSignal(str)
     remove_catalog = pyqtSignal(dict)
     add_new_catalog = pyqtSignal(QWidget)
-    update_catalog_dialog = pyqtSignal(bool)
-    update_solution_dialog = pyqtSignal(bool)
-    update_catalogs = pyqtSignal(list)
+    update_catalog_dialog = pyqtSignal(list)
+    update_solution_dialog = pyqtSignal()
+    batch_uninstall_dialog = pyqtSignal(list)
     update_all_catalogs = pyqtSignal()
     collection_changed = pyqtSignal()
 
@@ -56,8 +54,6 @@ class CollectionWindow(QMainWindow):
         self.setWindowTitle("Album")
         self.installed_icon = self.create_icon_from_unicode(chr(0x2713), "#19c18f", size=12)
         self.notinstalled_icon = self.create_icon_from_unicode(chr(0x2717), "#ff6c87", size=12)
-        self.update_catalog_dialog.connect(self._choose_update_catalogs)
-        self.update_solution_dialog.connect(self._choose_update_solutions)
 
         self.search_model = ActionsListModel()
         # self.search_proxy_model = ActionFilterProxyModel()
@@ -214,7 +210,7 @@ class CollectionWindow(QMainWindow):
         add_catalog.triggered.connect(lambda: self.add_new_catalog.emit(self))
         actions.addAction(add_catalog)
         update_catalog = QAction("Update catalog(s)")
-        update_catalog.triggered.connect(self.update_catalog_dialog)
+        update_catalog.triggered.connect(lambda: self.update_catalog_dialog.emit([catalog["name"] for catalog in self.all_catalogs]))
         actions.addAction(update_catalog)
         for catalog in self.deletable_catalogs:
             add_catalog = QAction("Remove catalog %s" % catalog["name"])
@@ -224,12 +220,12 @@ class CollectionWindow(QMainWindow):
 
     def _get_update_solution_actions(self):
         actions = QActionGroup(self)
-        # update_catalog = QAction("Update catalog(s)")
-        # update_catalog.triggered.connect(self.update_catalog_dialog)
-        # actions.addAction(update_catalog)
+        batch_uninstall = QAction("Uninstall all solutions from catalog(s)")
+        batch_uninstall.triggered.connect(lambda: self.batch_uninstall_dialog.emit([catalog["name"] for catalog in self.all_catalogs]))
         update_solutions = QAction("Update solution(s)")
         update_solutions.triggered.connect(self.update_solution_dialog)
         actions.addAction(update_solutions)
+        actions.addAction(batch_uninstall)
         return actions.actions()
 
     def make_remove_catalog_action(self, catalog):
@@ -346,6 +342,7 @@ class CollectionWindow(QMainWindow):
         return None
 
     def update_model(self):
+        print("update model")
         index = self.album_instance.get_index_as_dict()
         actions_list = []
         self.all_catalogs = []
@@ -389,19 +386,6 @@ class CollectionWindow(QMainWindow):
         item.action = CollectionWindow.Action(self.show_solution, full_coordinates(solution, catalog), versions, catalog)
         item.solution_key = solution_key
         return item
-
-    def _choose_update_catalogs(self, pressed):
-        options = []
-        for catalog in self.deletable_catalogs:
-            options.append(catalog["name"])
-        dialog = UpdateCatalogDialog(options, self.album_instance)
-        dialog.upgradeDone.connect(self.collection_changed)
-        dialog.exec_()
-
-    def _choose_update_solutions(self, pressed):
-        dialog = UpdateSolutionDialog(self.album_instance)
-        dialog.upgradeDone.connect(self.collection_changed)
-        dialog.exec_()
 
     def set_active(self):
         pass

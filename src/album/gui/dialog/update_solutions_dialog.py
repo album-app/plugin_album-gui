@@ -68,14 +68,14 @@ class UpdateSolutionDialog(CheckListTableDialog):
             self.upgrade_running.emit(False)
             return
         solution_action = self.solutions_with_actions[self.current_processed_item]
-        self.current_catalog_label.setText(self._get_action_text(solution_action))
+        self.current_catalog_label.setText(self.get_action_text(solution_action))
         self.thread = SolutionActionProcessThread(solution_action, self.album_instance)
         self.thread.processFinished.connect(self.on_update_finished)
         self.thread.processFailed.connect(lambda x: self.upgradeDone.emit())
         self.thread.start()
 
     @staticmethod
-    def _get_action_text(solution_action):
+    def get_action_text(solution_action):
         action_str = ""
         if solution_action.update_action == UpdateAction.INSTALL:
             action_str = "Installing"
