@@ -1,12 +1,13 @@
-from PyQt5 import Qt
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
-from PyQt5.QtWidgets import QApplication, QInputDialog, QProgressDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
+from PyQt5.QtWidgets import QApplication, QInputDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
     QProgressBar
 from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
+from album.gui.dialog.about_dialog import AboutDialog
 from album.gui.dialog.solutions_action_dialog import SolutionsActionDialog
 from album.gui.dialog.uninstall_solutions_from_catalog_dialog import UninstallSolutionsFromCatalogDialog
+from album.gui.dialog.update_album_dialog import UpdateAlbumDialog
 from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
 from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from album.gui.solution_window import SolutionWidget
@@ -41,6 +42,8 @@ class AlbumGUI(QObject):
             win.uninstall_solutions.connect(lambda sol: self.uninstall_solutions(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
+            win.open_about.connect(self.show_about_dialog)
+            win.update_album.connect(self.update_album_dialog)
             win.update_solution_dialog.connect(self.choose_update_solutions)
             win.batch_uninstall_dialog.connect(self.choose_batch_uninstall_catalogs)
             win.update_catalog_dialog.connect(self.choose_update_catalogs)
@@ -146,6 +149,14 @@ class AlbumGUI(QObject):
                 self.album_instance.remove_catalog_by_src(text)
                 display_error(str(e))
                 progress_dialog.close()  # Close the progress dialog in case of error
+
+    def show_about_dialog(self, parent):
+        dialog = AboutDialog(parent)
+        dialog.exec_()
+
+    def update_album_dialog(self, parent):
+        dialog = UpdateAlbumDialog(parent, self.album_instance.configuration().base_cache_path())
+        dialog.exec_()
 
     def choose_update_catalogs(self, options):
         dialog = UpdateCatalogDialog(options, self.album_instance)

@@ -3,8 +3,8 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
-from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont, QIcon, QColor
+from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent, QSize
+from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont, QIcon, QColor, QTextCursor
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
     QAction, QActionGroup, QSplitter, QComboBox, QStyle, QMessageBox, QTextEdit
 from album.api import Album
@@ -29,6 +29,8 @@ class CollectionWindow(QMainWindow):
     install_solution = pyqtSignal(str)
     remove_catalog = pyqtSignal(dict)
     add_new_catalog = pyqtSignal(QWidget)
+    open_about = pyqtSignal(QWidget)
+    update_album = pyqtSignal(QWidget)
     update_catalog_dialog = pyqtSignal(list)
     update_solution_dialog = pyqtSignal()
     batch_uninstall_dialog = pyqtSignal(list)
@@ -58,6 +60,8 @@ class CollectionWindow(QMainWindow):
             self.album_api_version = metadata.version("album-runner")
         except PackageNotFoundError:
             self.album_api_version = metadata.version("album-solution-api")
+        self.album_core_version = album.core.__version__
+        self.album_gui_version = metadata.version("album-gui")
         self.installed_icon = self.create_icon_from_unicode(chr(0x2713), "#19c18f", size=12)
         self.notinstalled_icon = self.create_icon_from_unicode(chr(0x2717), "#ff6c87", size=12)
 
@@ -157,18 +161,16 @@ class CollectionWindow(QMainWindow):
 
             self.selected_solution_group.setText(self.selected_solution["setup"]["group"])
             self.selected_solution_name.setText(self.selected_solution["setup"]["name"])
-            self.selected_solution_coordinates.setText(solution_coordinates(self.selected_solution))
 
             self.solution_api_warning.setVisible(Version(self.album_api_version) < Version(self.selected_solution["setup"]["album_api_version"]))
+
+            self.selected_solution_description.setPlainText("")
             if "title" in self.selected_solution["setup"] and self.selected_solution["setup"]["title"]:
-                self.selected_solution_title.setText(self.selected_solution["setup"]["title"])
-                self.selected_solution_title.setVisible(True)
-            else:
-                self.selected_solution_title.setVisible(False)
+                self.selected_solution_description.append("~ <b>%s</b>" % self.selected_solution["setup"]["title"])
+
             if "description" in self.selected_solution["setup"] and self.selected_solution["setup"]["description"]:
-                self.selected_solution_description.setText(self.selected_solution["setup"]["description"])
-            else:
-                self.selected_solution_description.setText("")
+                self.selected_solution_description.append(self.selected_solution["setup"]["description"])
+
             if "cite" in self.selected_solution["setup"] and self.selected_solution["setup"]["cite"]:
                 citations = ""
                 for citation in self.selected_solution["setup"]["cite"]:
@@ -176,15 +178,22 @@ class CollectionWindow(QMainWindow):
                     if "url" in citation:
                         citations += citation["url"] + "\n"
                 self.selected_solution_description.append("\nCredits: %s" % citations if citations else "")
+
             if "solution_creators" in self.selected_solution["setup"]:
                 creators = ""
                 for creator in self.selected_solution["setup"]["solution_creators"]:
                     creators += creator + "\n"
                 self.selected_solution_description.append("\nSolution file written by %s" % creators if creators else "")
+
+            cursor = self.selected_solution_description.textCursor()
+            cursor.movePosition(QTextCursor.Start)
+            self.selected_solution_description.setTextCursor(cursor)
+
             self.run_btn.setVisible(True)
         else:
-            self.selected_solution_title.setText("")
-            self.selected_solution_description.setText("")
+            self.selected_solution_description.setPlainText("")
+            self.selected_solution_group.setText("")
+            self.selected_solution_name.setText("")
             self.run_btn.setVisible(False)
 
     def _create_status_layout(self):
@@ -211,11 +220,15 @@ class CollectionWindow(QMainWindow):
         status_layout.addWidget(solutions_status)
         status_layout.addWidget(installed_status)
         status_layout.addStretch()
-        status_layout.addWidget(QLabel("Album v%s, max. album_api_version %s" % (album.core.__version__, self.album_api_version)))
+
+        album_label = QPushButton("Album v%s" % (self.album_core_version))
+        album_pixmap = QIcon(str(pathlib.Path(__file__).parent / 'resources' / 'album-xs.png'))
+        album_label.setIcon(album_pixmap)
+        self._set_actions(album_label, self._get_installation_actions())
+
+        status_layout.addWidget(album_label)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(10)
-        # status_layout.addWidget(running_status)
-        # status_layout.addWidget(updates_status)
         return status_layout
 
     def _get_catalog_actions(self):
@@ -230,6 +243,16 @@ class CollectionWindow(QMainWindow):
             add_catalog = QAction("Remove catalog %s" % catalog["name"])
             add_catalog.triggered.connect(self.make_remove_catalog_action(catalog))
             actions.addAction(add_catalog)
+        return actions.actions()
+
+    def _get_installation_actions(self):
+        actions = QActionGroup(self)
+        about = QAction("About")
+        about.triggered.connect(lambda: self.open_about.emit(self))
+        actions.addAction(about)
+        update_album = QAction("Update or reinstall Album")
+        update_album.triggered.connect(lambda: self.update_album.emit(self))
+        actions.addAction(update_album)
         return actions.actions()
 
     def _get_update_solution_actions(self):
@@ -272,19 +295,11 @@ class CollectionWindow(QMainWindow):
         res = QVBoxLayout(res_w)
         res.setContentsMargins(10, 10, 10, 0)
 
-        self.selected_solution_title = QLabel("")
         self.selected_solution_group = QLabel("")
         self.selected_solution_name = QLabel("")
-        self.selected_solution_coordinates = QLabel("")
         self.solution_api_warning = QPushButton("Warning: Potential incompatibility")
         self.solution_api_warning.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxWarning))
         self.solution_api_warning.clicked.connect(self.show_warning_dialog)
-
-        self.selected_solution_coordinates.setWordWrap(True)
-        self.selected_solution_title.setWordWrap(True)
-        font = self.selected_solution_title.font()
-        font.setBold(True)
-        self.selected_solution_title.setFont(font)
 
         self.selected_solution_description = self.create_readonly_textedit("No description provided.")
         content_widget = QWidget(res_w)
@@ -303,11 +318,14 @@ class CollectionWindow(QMainWindow):
         layout_name.addWidget(QLabel("Name: "))
         layout_name.addStretch()
         layout_name.addWidget(self.selected_solution_name)
+
+        self.solution_locations = QVBoxLayout()
+
         res.addLayout(layout_group)
         res.addLayout(layout_name)
         res.addLayout(combo_layout_version)
-        res.addWidget(self.selected_solution_title)
         res.addWidget(self.selected_solution_description)
+        res.addLayout(self.solution_locations)
         res.addWidget(self.solution_api_warning)
         res.addWidget(self._create_action_widget())
         self._update_focus_solution()
@@ -317,6 +335,9 @@ class CollectionWindow(QMainWindow):
         textedit = QTextEdit()
         textedit.setPlainText(text)
         textedit.setReadOnly(True)
+        textedit.setTextInteractionFlags(Qt.TextSelectableByMouse)  # Allows text selection but not editing
+        textedit.setFocusPolicy(Qt.StrongFocus)
+        textedit.setTextInteractionFlags(Qt.TextEditorInteraction)
         textedit.setWordWrapMode(1)  # Word wrap
         return textedit
 
