@@ -61,12 +61,17 @@
     - docker
   before_script:
     - apt update
+    - apt install -y xvfb
     - apt install -y curl
     - apt install -y bzip2
     - apt-get update && apt-get install -y binutils
     - apt install -y libgl1-mesa-glx libglib2.0-0
+    - apt install -y libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+    - apt install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig-dev
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
     - export ALBUM_CONDA_PATH=$CI_PROJECT_DIR/bin/micromamba
+    - export QT_QPA_PLATFORM='offscreen'
+    - export QT_DEBUG_PLUGINS=1
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_LINUX_X86_64.tar.bz2?inline=false | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
@@ -249,7 +254,7 @@ integration tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - python -m unittest test_gui_plugin/integration/run_all_integration.py
+    - xvfb-run -a python -m unittest test_gui_plugin/integration/run_all_integration.py
 
 
 # Macos Tests

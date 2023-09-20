@@ -1,7 +1,5 @@
-import math
-
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel, QProgressBar
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QLabel, QProgressBar, QTextEdit
 
 from album.gui.widgets.util import create_btn, get_monospace_font
 
@@ -15,20 +13,12 @@ class SolutionStatus(QWidget):
         self.layout = QVBoxLayout(self)
         self.scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_widget)
-        self.run_output = QLabel()
+        self.run_output = QTextEdit()
+        self.run_output.setReadOnly(True)
+        self.run_output.setWordWrapMode(1)  # Word wrap
         self.run_output.setFont(get_monospace_font())
-        self.scroll_layout.addWidget(self.run_output)
-        self.scroll = QScrollArea()
-        self.scroll.setFrameShape(QFrame.NoFrame)
-        self.scroll.setWidget(self.scroll_widget)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setViewportMargins(0, 0, 0, 0)
-        self.scroll.setContentsMargins(0, 0, 0, 0)
-        self.scroll_layout.setAlignment(Qt.AlignTop)
-        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self.scroll, 1)
+        self.layout.addWidget(self.run_output, 1)
         self.layout.addWidget(self._create_status_box())
-        self._last_log = None
 
     def _create_status_box(self):
         res = QWidget(self)
@@ -48,35 +38,12 @@ class SolutionStatus(QWidget):
         actions_layout.addWidget(self.continue_btn)
         return res
 
-    def update_solution_log(self, records):
-        self.scroll.setFrameShape(QFrame.Box)
-        start_i = 0
-        if self._last_log:
-            for i in range(len(records)):
-                record = records[i]
-                if hasattr(record, "msg"):
-                    if record.msg == self._last_log.msg and math.isclose(record.created, self._last_log.created):
-                        start_i = i + 1
-                        break
-                else:
-                    if record["msg"] == self._last_log["msg"] and record["asctime"] == self._last_log["asctime"]:
-                        start_i = i+1
-                        break
-        for i in range(start_i, len(records)):
-            record = records[i]
-            if self.run_output.text():
-                if hasattr(record, "msg"):
-                    self.run_output.setText("%s\n%s" % (self.run_output.text(), record.msg))
-                else:
-                    self.run_output.setText("%s\n%s" % (self.run_output.text(), record["msg"]))
-            else:
-                if hasattr(record, "msg"):
-                    self.run_output.setText("%s" % record.msg)
-                else:
-                    self.run_output.setText("%s" % record["msg"])
-        self.scroll_widget.update()
-        self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
-        self._last_log = records[len(records)-1]
+    def update_solution_log(self, record):
+        if hasattr(record, "msg"):
+            self.run_output.append(record.msg)
+        else:
+            self.run_output.append(record["msg"])
+        # self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
         self.set_active()
 
     def set_solution_finished(self):
