@@ -51,7 +51,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_collection_index.get_recently_launched_solutions.return_value = [self._mock_resolve_result()]
         mock_task_manager = mock.create_autospec(TaskManager)
         mock_resolve_result = mock.create_autospec(ResolveResult)
-        mock_album.resolve.return_value = mock_resolve_result
+        mock_album.get_database_entry.return_value = mock_resolve_result
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
@@ -100,7 +100,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_album.uninstall = lambda x: sleep(1)
         mock_task_manager = mock.create_autospec(TaskManager)
         mock_resolve_result = mock.create_autospec(ResolveResult)
-        mock_album.resolve.return_value = mock_resolve_result
+        mock_album.get_database_entry.return_value = mock_resolve_result
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
@@ -127,7 +127,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_album = mock.create_autospec(Album)
         mock_task_manager = mock.create_autospec(TaskManager)
         mock_resolve_result = mock.create_autospec(ResolveResult)
-        mock_album.resolve.return_value = mock_resolve_result
+        mock_album.get_database_entry.return_value = mock_resolve_result
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False

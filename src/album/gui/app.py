@@ -60,17 +60,23 @@ class AlbumGUI(QObject):
     def install_solution(self, solution):
         win = SolutionWidget()
         try:
-            solution_data = self.album_instance.resolve(solution).database_entry()
+            solution_data = self.get_database_entry(solution)
             self._install(win, solution, solution_data)
         except LookupError:
             display_error("Cannot find solution %s." % solution)
         self.open_windows.append(win)
         win.show()
 
+    def get_database_entry(self, solution):
+        return self.get_unloaded_resolve_result(solution).database_entry()
+
+    def get_unloaded_resolve_result(self, solution):
+        return self.album_instance._controller.collection_manager()._resolve(solution)
+
     def uninstall_solution(self, solution):
         win = SolutionWidget()
         try:
-            solution_data = self.album_instance.resolve(solution).database_entry()
+            solution_data = self.get_database_entry(solution)
             win.set_show_solution(solution_data)
             if not self.album_instance.is_installed(solution):
                 return
@@ -160,13 +166,19 @@ class AlbumGUI(QObject):
         display_info("Action complete", "Successfully removed catalog.")
 
     def _install_if_needed(self, win, solution):
-        solution_data = self.album_instance.resolve(solution).database_entry()
+        solution_data = self.get_database_entry(solution)
         win.set_show_solution(solution_data)
-        if not self.album_instance.is_installed(solution):
+        if not self.is_installed(solution):
             win.get_pre_install_widget().install_solution.connect(lambda: self._install(win, solution, solution_data))
             win.show_pre_install()
         else:
             self._show_pre_run(win, solution, solution_data)
+
+    def is_installed(self, solution):
+        resolve_result = self.get_unloaded_resolve_result(solution)
+        return self.album_instance._controller.solutions().is_installed(
+            resolve_result.catalog(), resolve_result.coordinates()
+        )
 
     def _install(self, win, solution, solution_data):
         win.set_show_solution(solution_data)
