@@ -229,13 +229,17 @@ class AlbumGUI(QObject):
             if self.album_instance:
                 values = win.get_pre_run_widget().get_values()
                 win.show_run()
-                win.get_run_widget().continue_signal.connect(lambda: win.close())
+                win.get_run_widget().continue_signal.connect(lambda: self.restart_run(win))
                 worker = Worker(self.album_instance.run, {"solution_to_resolve": solution,
                                                           "argv": self._construct_args(solution, values)})
                 worker.handler.task_finished.connect(lambda: win.get_run_widget().set_solution_finished())
                 self.ongoing_processes[win] = worker
                 worker.handler.new_log.connect(lambda records: win.get_run_widget().update_solution_log(records))
                 self.threadpool.start(worker)
+
+    def restart_run(self, win):
+        win.get_run_widget().run_output.clear()
+        return win.show_pre_run()
 
     @staticmethod
     def _build_args(args):

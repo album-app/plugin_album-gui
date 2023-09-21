@@ -28,7 +28,7 @@ class SolutionWidget(QMainWindow):
             return "Running..."
 
         def _get_continue_text(self):
-            return "Close"
+            return "Restart"
 
     closing = pyqtSignal()
     return_pressed = pyqtSignal(QKeyEvent)
