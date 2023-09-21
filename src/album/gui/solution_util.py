@@ -37,8 +37,17 @@ def group_solutions_by_version(catalog):
     for solution_key in solutions:
         versioned_solutions = solutions[solution_key]
 
-        solutions[solution_key] = sorted(versioned_solutions, key=lambda x: packaging.version.Version(x["setup"]['version'].replace("-SNAPSHOT", ".dev0")))
+        solutions[solution_key] = sorted(versioned_solutions, key=lambda x: preprocess_version(x))
     return solutions
+
+
+def preprocess_version(version):
+    version = version["setup"]['version'].replace("-SNAPSHOT", ".dev0")
+    try:
+        return packaging.version.Version(version)
+    except ValueError:
+        return packaging.version.Version("0.0.0")
+
 
 
 def full_coordinates(solution, catalog):
