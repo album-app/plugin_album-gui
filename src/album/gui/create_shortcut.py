@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 from album.api import Album
+from album.core.api.controller.environment_manager import IEnvironmentManager
 
 from album.gui.include.pyshortcuts import make_shortcut
 
@@ -25,7 +26,14 @@ def create_shortcut(album_instance: Album, args):
         package_manager = micromamba_executable
     else:
         package_manager = album_instance.configuration().conda_executable()
+    _create_shortcut_from_environment_and_executable(album_environment_path, package_manager)
+
+
+def _create_shortcut_from_environment_and_executable(album_environment_path, package_manager):
     script_path = " ".join(['run', '-p', str(album_environment_path), 'album', 'gui'])
-    exec = " ".join([package_manager])
+    envs = ["env", "ALBUM_CONDA_PATH=%s" % package_manager]
+    if "micromamba" in str(package_manager).lower():
+        envs.append("MAMBA_ROOT_PREFIX=%s" % Path(album_environment_path).parent)
+    exec = " ".join(envs + [package_manager])
     icon_path = get_icon_path()
     make_shortcut(script_path, name='Album', icon=icon_path, executable=exec, terminal=False)
