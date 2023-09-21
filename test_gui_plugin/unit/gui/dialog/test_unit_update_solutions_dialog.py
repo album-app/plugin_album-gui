@@ -3,7 +3,7 @@ import unittest
 from album.gui.dialog.update_action_item import UpdateAction
 from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from album.gui.solution_util import solution_coordinates
-from unit.gui.test_unit_solution_util import append_version
+from test_gui_plugin.unit.gui.test_unit_solution_util import append_version
 
 
 class TestUnitUpdateSolutionsDialog(unittest.TestCase):

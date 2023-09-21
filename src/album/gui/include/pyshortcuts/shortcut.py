@@ -57,13 +57,7 @@ def shortcut(script, userfolders, name=None, description=None, folder=None,
     if not isinstance(script, str) or len(script) < 1:
         raise ValueError("`script` for shortcut must be a non-zero length string")
 
-    words = script.split(' ', 1)
-    if len(words) < 2:
-        words.append('')
-
-    script, arguments = words[0], words[1]
-
-    full_script = os.path.normpath(os.path.abspath(script))
+    full_script = script
 
     if name is None:
         name = script
@@ -105,4 +99,4 @@ def shortcut(script, userfolders, name=None, description=None, folder=None,
         startmenu_dir = os.path.normpath(os.path.join(startmenu_dir, folder))
 
     return Shortcut(name, description, icon, target, script, full_script,
-                    arguments, desktop_dir, startmenu_dir)
+                    "", desktop_dir, startmenu_dir)
