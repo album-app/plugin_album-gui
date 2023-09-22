@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from integration import test_integration_solution_status_widget, test_integration_create_shortcut, test_commandline
+from test_gui_plugin.integration import test_integration_solution_status_widget, test_integration_create_shortcut, test_commandline
 
 
 def main():
