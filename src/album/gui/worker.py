@@ -13,7 +13,7 @@ from album.runner.album_logging import get_active_logger, LogLevel
 class Worker(QRunnable):
 
     class LogHandler(ILogHandler, QObject):
-        new_log = pyqtSignal(list)
+        new_log = pyqtSignal(logging.LogRecord)
         task_finished = pyqtSignal()
 
         def __init__(self):
@@ -23,7 +23,7 @@ class Worker(QRunnable):
 
         def emit(self, record: logging.LogRecord) -> None:
             self._records.append(record)
-            self.new_log.emit(self.records())
+            self.new_log.emit(record)
 
         def records(self):
             return self._records
@@ -36,7 +36,7 @@ class Worker(QRunnable):
 
     def run(self):
         get_active_logger().info(f"starting task {self.task.id()}...")
-        logger = album_logging.configure_logging("task" + str(self.task.id()))
+        logger = album_logging.configure_logging("task" + str(self.task.id()), loglevel=LogLevel.INFO)
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         try:

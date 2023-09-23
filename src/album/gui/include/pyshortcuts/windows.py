@@ -3,13 +3,12 @@
 Create desktop shortcuts for Windows
 """
 import os
-import sys
-import time
-from .shortcut import shortcut
-from . import UserFolders
 
 import win32com.client
 from win32com.shell import shell, shellcon
+
+from . import UserFolders
+from .shortcut import shortcut
 
 scut_ext = 'lnk'
 ico_ext = ('ico',)

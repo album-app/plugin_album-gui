@@ -1,8 +1,15 @@
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
-from PyQt5.QtWidgets import QApplication, QInputDialog
+from PyQt5.QtWidgets import QApplication, QInputDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
+    QProgressBar
 from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
+from album.gui.dialog.about_dialog import AboutDialog
+from album.gui.dialog.solutions_action_dialog import SolutionsActionDialog
+from album.gui.dialog.uninstall_solutions_from_catalog_dialog import UninstallSolutionsFromCatalogDialog
+from album.gui.dialog.update_album_dialog import UpdateAlbumDialog
+from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
+from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from album.gui.solution_window import SolutionWidget
 from album.gui.widgets.util import display_error, display_confirmation, display_info
 from album.gui.worker import Worker
@@ -32,10 +39,14 @@ class AlbumGUI(QObject):
             win.show_solution.connect(lambda sol: self.launch_solution(sol))
             win.install_solution.connect(lambda sol: self.install_solution(sol))
             win.uninstall_solution.connect(lambda sol: self.uninstall_solution(sol))
+            win.uninstall_solutions.connect(lambda sol: self.uninstall_solutions(sol))
             win.remove_catalog.connect(self.remove_catalog)
             win.add_new_catalog.connect(self.add_catalog)
-            win.update_catalogs.connect(self.update_catalogs)
-            win.update_all_catalogs.connect(self.update_all_catalogs)
+            win.open_about.connect(self.show_about_dialog)
+            win.update_album.connect(self.update_album_dialog)
+            win.update_solution_dialog.connect(self.choose_update_solutions)
+            win.batch_uninstall_dialog.connect(self.choose_batch_uninstall_catalogs)
+            win.update_catalog_dialog.connect(self.choose_update_catalogs)
             self.collection_changed.connect(win.update_model)
         win.show()
         self.app.exec()
@@ -52,17 +63,23 @@ class AlbumGUI(QObject):
     def install_solution(self, solution):
         win = SolutionWidget()
         try:
-            solution_data = self.album_instance.resolve(solution).database_entry()
+            solution_data = self.get_database_entry(solution)
             self._install(win, solution, solution_data)
         except LookupError:
             display_error("Cannot find solution %s." % solution)
         self.open_windows.append(win)
         win.show()
 
+    def get_database_entry(self, solution):
+        return self.get_unloaded_resolve_result(solution).database_entry()
+
+    def get_unloaded_resolve_result(self, solution):
+        return self.album_instance._controller.collection_manager()._resolve(solution)
+
     def uninstall_solution(self, solution):
         win = SolutionWidget()
         try:
-            solution_data = self.album_instance.resolve(solution).database_entry()
+            solution_data = self.get_database_entry(solution)
             win.set_show_solution(solution_data)
             if not self.album_instance.is_installed(solution):
                 return
@@ -78,6 +95,11 @@ class AlbumGUI(QObject):
             display_error("Cannot find solution %s." % solution)
         self.open_windows.append(win)
         win.show()
+
+    def uninstall_solutions(self, actions):
+        dialog = SolutionsActionDialog(self.album_instance, actions, "Uninstall solution versions", "Would you like to uninstall the following versions of this solution?", "Uninstall")
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def _widget_finished(self, widget):
         widget.set_solution_finished()
@@ -97,56 +119,80 @@ class AlbumGUI(QObject):
     def add_catalog(self, parent):
         text, ok = QInputDialog.getText(parent, 'Add catalog', 'Enter the catalog path or URL:')
         if ok:
+            progress_dialog = QDialog(parent)
+            layout = QVBoxLayout()
+            close_button = QPushButton("Close")
+            close_button.setVisible(False)
+            close_button.clicked.connect(progress_dialog.close)
+            progress_label = QLabel("Adding catalog %s.." % text)
+            layout.addWidget(progress_label)
+            progressbar = QProgressBar()
+            progressbar.setRange(0, 0)
+            layout.addWidget(progressbar)
+            layout.addWidget(close_button)
+            progress_dialog.setLayout(layout)
             try:
+
+                # Create worker
                 worker = Worker(self.album_instance.add_catalog, {"catalog_src": text})
-                worker.handler.task_finished.connect(self.catalog_added)
+
                 worker.handler.task_finished.connect(self.collection_changed)
+                worker.handler.task_finished.connect(lambda: progressbar.setVisible(False))
+                worker.handler.task_finished.connect(lambda: close_button.setVisible(True))
+                worker.handler.task_finished.connect(lambda: progress_label.setText("Successfully added catalog %s." % text))
+
+                # Start the worker
                 self.threadpool.start(worker)
+                progress_dialog.exec_()
+
             except Exception as e:
                 self.album_instance.remove_catalog_by_src(text)
                 display_error(str(e))
+                progress_dialog.close()  # Close the progress dialog in case of error
 
-    def update_catalogs(self, catalogs):
-        for catalog in catalogs:
-            try:
-                worker = Worker(self.album_instance.update, {"catalog_name": catalog})
-                worker.handler.task_finished.connect(lambda: self.catalog_updated(catalog))
-                worker.handler.task_finished.connect(self.collection_changed)
-                self.threadpool.start(worker)
-            except Exception as e:
-                display_error(str(e))
+    def show_about_dialog(self, parent):
+        dialog = AboutDialog(parent)
+        dialog.exec_()
 
-    def update_all_catalogs(self):
-        try:
-            worker = Worker(self.album_instance.update, {"catalog_name": None})
-            worker.handler.task_finished.connect(self.all_catalogs_updated)
-            worker.handler.task_finished.connect(self.collection_changed)
-            self.threadpool.start(worker)
-        except Exception as e:
-            display_error(str(e))
+    def update_album_dialog(self, parent):
+        dialog = UpdateAlbumDialog(parent, self.album_instance.configuration().base_cache_path())
+        dialog.exec_()
 
-    def catalog_added(self):
-        display_info("Action complete", "Successfully added catalog.")
+    def choose_update_catalogs(self, options):
+        dialog = UpdateCatalogDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
-    def catalog_updated(self, catalog_name):
-        display_info("Action complete", "Successfully updated catalog %s." % catalog_name)
+    def choose_batch_uninstall_catalogs(self, options):
+        dialog = UninstallSolutionsFromCatalogDialog(options, self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
-    def all_catalogs_updated(self):
-        display_info("Action complete", "Successfully updated all catalogs.")
+    def choose_update_solutions(self):
+        dialog = UpdateSolutionDialog(self.album_instance)
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def catalog_removed(self):
         display_info("Action complete", "Successfully removed catalog.")
 
     def _install_if_needed(self, win, solution):
-        solution_data = self.album_instance.resolve(solution).database_entry()
+        solution_data = self.get_database_entry(solution)
         win.set_show_solution(solution_data)
-        if not self.album_instance.is_installed(solution):
+        if not self.is_installed(solution):
             win.get_pre_install_widget().install_solution.connect(lambda: self._install(win, solution, solution_data))
             win.show_pre_install()
         else:
             self._show_pre_run(win, solution, solution_data)
 
+    def is_installed(self, solution):
+        resolve_result = self.get_unloaded_resolve_result(solution)
+        return self.album_instance._controller.solutions().is_installed(
+            resolve_result.catalog(), resolve_result.coordinates()
+        )
+
     def _install(self, win, solution, solution_data):
+        win.set_show_solution(solution_data)
         win.get_install_widget().continue_signal.connect(lambda: self._show_pre_run(win, solution, solution_data))
         win.show_install()
 
@@ -183,13 +229,17 @@ class AlbumGUI(QObject):
             if self.album_instance:
                 values = win.get_pre_run_widget().get_values()
                 win.show_run()
-                win.get_run_widget().continue_signal.connect(lambda: win.close())
+                win.get_run_widget().continue_signal.connect(lambda: self.restart_run(win))
                 worker = Worker(self.album_instance.run, {"solution_to_resolve": solution,
                                                           "argv": self._construct_args(solution, values)})
                 worker.handler.task_finished.connect(lambda: win.get_run_widget().set_solution_finished())
                 self.ongoing_processes[win] = worker
                 worker.handler.new_log.connect(lambda records: win.get_run_widget().update_solution_log(records))
                 self.threadpool.start(worker)
+
+    def restart_run(self, win):
+        win.get_run_widget().run_output.clear()
+        return win.show_pre_run()
 
     @staticmethod
     def _build_args(args):

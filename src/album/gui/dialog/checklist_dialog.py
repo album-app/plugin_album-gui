@@ -16,7 +16,7 @@ class CheckListDialog(QDialog):
         self.options = options
         self.checkboxes = []
         self.availableUpdates = []
-        self.initUI(question, action_name)
+        self.custom_layout = self.initUI(question, action_name)
 
     def initUI(self, question, action_name):
         scrollArea = QScrollArea()
@@ -42,13 +42,15 @@ class CheckListDialog(QDialog):
         hbox.addWidget(deselectAllButton)
         hbox.addWidget(self.actionButton)
         hbox.addWidget(self.cancelButton)
-
+        custom_layout = QVBoxLayout()
         vbox2 = QVBoxLayout()
         vbox2.addWidget(QLabel(question))
+        vbox2.addLayout(custom_layout)
         vbox2.addWidget(scrollArea)
         vbox2.addLayout(hbox)
 
         self.setLayout(vbox2)
+        return custom_layout
 
     def selectAll(self):
         for checkbox in self.checkboxes:

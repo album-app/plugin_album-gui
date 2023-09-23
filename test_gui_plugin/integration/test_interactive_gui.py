@@ -1,6 +1,10 @@
+import sys
 import unittest
+from time import sleep
 from unittest import mock
+from unittest.mock import create_autospec
 
+from PyQt5.QtWidgets import QApplication, QDialog
 from album.api import Album
 from album.core.api.model.collection_index import ICollectionIndex
 from album.core.controller.album_controller import AlbumController
@@ -8,10 +12,19 @@ from album.core.controller.collection.collection_manager import CollectionManage
 from album.core.controller.task_manager import TaskManager
 from album.core.model.resolve_result import ResolveResult
 
+from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
 from src.album.gui.app import AlbumGUI
 
 
 class TestInteractiveGUI(unittest.TestCase):
+
+    def test_gui_realworld(self):
+        album = Album.Builder().build()
+        album.load_or_create_collection()
+        gui = AlbumGUI(album)
+        gui.launch()
+        gui.dispose()
+        album.close()
 
     def test_gui(self):
         #mocks
@@ -38,7 +51,56 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_collection_index.get_recently_launched_solutions.return_value = [self._mock_resolve_result()]
         mock_task_manager = mock.create_autospec(TaskManager)
         mock_resolve_result = mock.create_autospec(ResolveResult)
-        mock_album.resolve.return_value = mock_resolve_result
+        mock_album.get_database_entry.return_value = mock_resolve_result
+        mock_resolve_db_entry = self._mock_resolve_result()
+        mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
+        mock_album.is_installed.return_value = False
+        mock_task_manager.get_status.side_effect = [{"status": "RUNNING", "records": [
+            {"msg": "heavy work....", "asctime": 0}
+        ]}, {"status": "FINISHED", "records": [
+            {"msg": "heavy work....", "asctime": 0},
+            {"msg": "done.", "asctime": 1}
+        ]}, {"status": "RUNNING", "records": [
+            {"msg": "heavy work....", "asctime": 0}
+        ]}, {"status": "FINISHED", "records": [
+            {"msg": "heavy work....", "asctime": 0},
+            {"msg": "done.", "asctime": 1}
+        ]}]
+
+        mock_controller._task_manager = mock_task_manager
+        gui = AlbumGUI(mock_album)
+        gui.launch()
+        gui.dispose()
+        mock_album.close()
+
+    def test_gui_updates(self):
+        #mocks
+        mock_album = mock.create_autospec(Album)
+        mock_album.get_catalogs_as_dict.return_value = {
+            "catalogs": [
+                {
+                    "name": "catalog1",
+                    "src": "url1"
+                },
+                {
+                    "name": "catalog2",
+                    "src": "url2"
+                }
+            ]
+        }
+        mock_album.get_index_as_dict.return_value = self._mock_index_dict_updates()
+        mock_controller = mock.create_autospec(AlbumController)
+        mock_album._controller = mock_controller
+        mock_collection_manager = mock.create_autospec(CollectionManager)
+        mock_controller.collection_manager.return_value = mock_collection_manager
+        mock_collection_index = mock.create_autospec(ICollectionIndex)
+        mock_collection_manager.get_collection_index.return_value = mock_collection_index
+        mock_collection_index.get_recently_launched_solutions.return_value = [self._mock_resolve_result()]
+        mock_album.install = lambda x: sleep(1)
+        mock_album.uninstall = lambda x: sleep(1)
+        mock_task_manager = mock.create_autospec(TaskManager)
+        mock_resolve_result = mock.create_autospec(ResolveResult)
+        mock_album.get_database_entry.return_value = mock_resolve_result
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
@@ -65,7 +127,7 @@ class TestInteractiveGUI(unittest.TestCase):
         mock_album = mock.create_autospec(Album)
         mock_task_manager = mock.create_autospec(TaskManager)
         mock_resolve_result = mock.create_autospec(ResolveResult)
-        mock_album.resolve.return_value = mock_resolve_result
+        mock_album.get_database_entry.return_value = mock_resolve_result
         mock_resolve_db_entry = self._mock_resolve_result()
         mock_resolve_result.database_entry.return_value = mock_resolve_db_entry
         mock_album.is_installed.return_value = False
@@ -136,6 +198,18 @@ class TestInteractiveGUI(unittest.TestCase):
             ]
         }
         return mock_resolve_db_entry
+
+    def test_gui_solution_update_widget(self):
+        app = QApplication(sys.argv)
+        album = create_autospec(Album)
+        # album.upgrade = lambda x: sleep(1)
+        album.get_index_as_dict.return_value = TestInteractiveGUI._mock_index_dict_updates()
+        dialog = UpdateSolutionDialog(album)
+        if dialog.exec_() == QDialog.Accepted:
+            all_checked, checked_items = dialog.getCheckedItems()
+            print("All choices activated: ", all_checked)
+            print("Activated choices: ", checked_items)
+        sys.exit(app.exec_())
 
     @staticmethod
     def _mock_index_dict():
@@ -827,6 +901,41 @@ class TestInteractiveGUI(unittest.TestCase):
                             "internal": {
                                 "catalog_id": 2,
                                 "children": [],
+                                "collection_id": 11,
+                                "hash": "3674d80ccbd91cab3e61a3483e702971",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 0,
+                                "last_execution": None,
+                                "parent": None,
+                                "solution_id": 11
+                            },
+                            "setup": {
+                                "acknowledgement": None,
+                                "album_api_version": "0.3.1",
+                                "album_version": None,
+                                "args": [],
+                                "authors": [],
+                                "changelog": None,
+                                "cite": [],
+                                "covers": [],
+                                "custom": {},
+                                "description": None,
+                                "documentation": [],
+                                "doi": "10.5281/zenodo.6411558",
+                                "group": "album",
+                                "license": None,
+                                "name": "template-minimal",
+                                "tags": [],
+                                "timestamp": "2022-04-04T10:57:14.810172",
+                                "title": None,
+                                "version": "0.2.0"
+                            }
+                        },
+                        {
+                            "internal": {
+                                "catalog_id": 2,
+                                "children": [],
                                 "collection_id": 12,
                                 "hash": "71097af4150c9a6434198a2dd92d2fba",
                                 "install_date": None,
@@ -884,6 +993,119 @@ class TestInteractiveGUI(unittest.TestCase):
             ]
         }
 
+    @staticmethod
+    def _mock_index_dict_updates():
+        return {
+            "base": "/path/to/base",
+            "catalogs": [
+                {
+                    "branch_name": "main",
+                    "catalog_id": 1,
+                    "deletable": 0,
+                    "name": "first_catalog",
+                    "path": "/path/to/first_catalog",
+                    "solutions": [
+                        {
+                            "internal": {
+                                "catalog_id": 1,
+                                "children": [],
+                                "collection_id": 1,
+                                "hash": "old_hash",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 1,
+                                "last_execution": "2021-01-01T00:00:00",
+                                "parent": None,
+                                "solution_id": None
+                            },
+                            "setup": {
+                                "group": "generic",
+                                "name": "single_version",
+                                "version": "1.0.0"
+                            }
+                        },
+                        {
+                            "internal": {
+                                "catalog_id": 1,
+                                "children": [],
+                                "collection_id": 1,
+                                "hash": "old_hash",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 1,
+                                "last_execution": "2021-01-01T00:00:00",
+                                "parent": None,
+                                "solution_id": None
+                            },
+                            "setup": {
+                                "group": "generic",
+                                "name": "solution1",
+                                "version": "1.0.0"
+                            }
+                        },
+                        {
+                            "internal": {
+                                "catalog_id": 1,
+                                "children": [],
+                                "collection_id": 2,
+                                "hash": "new_hash",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 0,
+                                "last_execution": None,
+                                "parent": None,
+                                "solution_id": None
+                            },
+                            "setup": {
+                                "group": "generic",
+                                "name": "solution1",
+                                "version": "2.0.0"
+                            }
+                        },
+                        {
+                            "internal": {
+                                "catalog_id": 1,
+                                "children": [2],
+                                "collection_id": 3,
+                                "hash": "old_hash_parent",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 1,
+                                "last_execution": "2021-01-01T00:00:00",
+                                "parent": None,
+                                "solution_id": None
+                            },
+                            "setup": {
+                                "group": "generic",
+                                "name": "common_solution_parent",
+                                "version": "1.0.0"
+                            }
+                        },
+                        {
+                            "internal": {
+                                "catalog_id": 1,
+                                "children": [1],
+                                "collection_id": 4,
+                                "hash": "new_hash_parent",
+                                "install_date": None,
+                                "installation_unfinished": 0,
+                                "installed": 1,
+                                "last_execution": "2021-01-01T00:00:00",
+                                "parent": None,
+                                "solution_id": None
+                            },
+                            "setup": {
+                                "group": "generic",
+                                "name": "common_solution_parent",
+                                "version": "2.0.0"
+                            }
+                        }
+                    ],
+                    "src": "/path/to/first_catalog_src",
+                    "type": "direct"
+                }
+            ]
+        }
 
 if __name__ == '__main__':
     TestInteractiveGUI().run()
