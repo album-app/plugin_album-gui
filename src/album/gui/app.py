@@ -111,7 +111,7 @@ class AlbumGUI(QObject):
                 worker = Worker(self.album_instance.remove_catalog_by_name, {"catalog_src": catalog["name"]})
                 worker.handler.task_finished.connect(self.collection_changed)
                 worker.handler.task_finished.connect(self.catalog_removed)
-                worker.handler.new_log.connect(lambda records: self._check_log_for_error(records))
+                worker.handler.new_log.connect(lambda record: self._check_log_for_error(record))
                 self.threadpool.start(worker)
             except RuntimeError as e:
                 display_error(str(e))
@@ -258,10 +258,9 @@ class AlbumGUI(QObject):
         return res
 
     @staticmethod
-    def _check_log_for_error(records):
-        last_record = records[len(records) - 1]
-        if last_record.levelname == "ERROR":
-            display_error(str(last_record.msg))
+    def _check_log_for_error(record):
+        if record.levelname == "ERROR":
+            display_error(str(record.msg))
 
 
 if __name__ == '__main__':

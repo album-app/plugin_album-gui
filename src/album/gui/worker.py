@@ -15,6 +15,7 @@ class Worker(QRunnable):
     class LogHandler(ILogHandler, QObject):
         new_log = pyqtSignal(logging.LogRecord)
         task_finished = pyqtSignal()
+        task_failed = pyqtSignal()
 
         def __init__(self):
             QObject.__init__(self)
@@ -44,6 +45,8 @@ class Worker(QRunnable):
                 import pythoncom
                 pythoncom.CoInitialize()
             self.task.method()(**self.task.args())
+            get_active_logger().info(f"finished task {self.task.id()}.")
+            self.handler.task_finished.emit()
         except Exception as e:
             traceback.print_exc()
             logger.error(str(e))
@@ -51,7 +54,5 @@ class Worker(QRunnable):
         finally:
             if platform.system() == 'Windows':
                 pythoncom.CoUninitialize()
-        logger.removeHandler(self.handler)
-        album_logging.pop_active_logger()
-        get_active_logger().info(f"finished task {self.task.id()}.")
-        self.handler.task_finished.emit()
+            logger.removeHandler(self.handler)
+            album_logging.pop_active_logger()
