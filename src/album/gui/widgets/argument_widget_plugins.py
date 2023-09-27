@@ -148,6 +148,7 @@ class DoubleWidget(AbstractWidget):
     def create_value_widget(self):
         self.spin_box = QDoubleSpinBox()
         self.spin_box.setDecimals(6)
+        self.spin_box.setMaximum(999999)
         return self.spin_box
 
     def get_value(self):
