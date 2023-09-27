@@ -70,7 +70,7 @@ class SolutionsActionDialog(CheckListTableDialog):
         self.current_catalog_label.setText(self._get_action_text(solution_action))
         self.thread = SolutionActionProcessThread(solution_action, self.album_instance)
         self.thread.processFinished.connect(self.on_update_finished)
-        self.thread.processFailed.connect(lambda x: self.upgradeDone.emit())
+        self.thread.processFailed.connect(self.on_update_finished)
         self.thread.start()
 
     @staticmethod

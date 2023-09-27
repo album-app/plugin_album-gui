@@ -21,9 +21,8 @@ class SolutionActionProcessThread(QThread):
                 self.album_instance.install(full_coordinates(self.item.solution, self.item.catalog))
             if self.item.update_action == UpdateAction.UNINSTALL:
                 self.album_instance.uninstall(full_coordinates(self.item.solution, self.item.catalog))
+            self.processFinished.emit(self.item)
         except Exception as e:
             print(f"An error occurred: {e}")
             display_error(f"An error occurred: {e}")
             self.processFailed.emit(self.item)
-            return
-        self.processFinished.emit(self.item)

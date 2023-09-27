@@ -117,6 +117,15 @@ def generate_update_actions(catalogs, actions, index=0):
             generate_update_actions(remaining_catalogs, actions, index + 1)
 
 
+def generate_install_all_actions(album_instance, catalog_src):
+    actions = []
+    for catalog in album_instance.get_index_as_dict()["catalogs"]:
+        if catalog["src"] == catalog_src:
+            for solution in catalog["solutions"]:
+                actions.append(UpdateActionItem(UpdateAction.INSTALL, catalog, solution))
+    return actions
+
+
 def generate_remove_solutions_actions(album_instance: Album, catalog_names):
     catalogs = []
     for catalog in album_instance.get_index_as_dict()["catalogs"]:
