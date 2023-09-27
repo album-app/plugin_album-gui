@@ -77,7 +77,9 @@ class CheckListTableDialog(QDialog):
 
         custom_layout = QVBoxLayout()
         vbox2 = QVBoxLayout()
-        vbox2.addWidget(QLabel(question))
+        q_label = QLabel(question)
+        q_label.setWordWrap(True)
+        vbox2.addWidget(q_label)
         if enable_disable_options:
             vbox2.addWidget(self.installCheckbox)
             vbox2.addWidget(self.uninstallCheckbox)

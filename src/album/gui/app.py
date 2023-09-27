@@ -1,6 +1,6 @@
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
 from PyQt5.QtWidgets import QApplication, QInputDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
-    QProgressBar
+    QProgressBar, QLineEdit, QCheckBox, QHBoxLayout
 from album.api import Album
 
 from album.gui.collection_window import CollectionWindow
@@ -10,6 +10,7 @@ from album.gui.dialog.uninstall_solutions_from_catalog_dialog import UninstallSo
 from album.gui.dialog.update_album_dialog import UpdateAlbumDialog
 from album.gui.dialog.update_catalog_dialog import UpdateCatalogDialog
 from album.gui.dialog.update_solutions_dialog import UpdateSolutionDialog
+from album.gui.solution_util import generate_install_all_actions
 from album.gui.solution_window import SolutionWidget
 from album.gui.widgets.util import display_error, display_confirmation, display_info
 from album.gui.worker import Worker
@@ -117,14 +118,32 @@ class AlbumGUI(QObject):
                 display_error(str(e))
 
     def add_catalog(self, parent):
-        text, ok = QInputDialog.getText(parent, 'Add catalog', 'Enter the catalog path or URL:')
-        if ok:
+        dialog = QDialog(parent)
+        layout = QVBoxLayout(dialog)
+        input_label = QLabel('Enter the catalog path or URL:')
+        line_edit = QLineEdit()
+        checkbox = QCheckBox('Install all solutions from catalog')
+
+        ok_button = QPushButton('OK')
+        ok_button.clicked.connect(dialog.accept)
+
+        cancel_button = QPushButton('Cancel')
+        cancel_button.clicked.connect(dialog.reject)
+        btn_layout = QHBoxLayout()
+        btn_layout.addWidget(ok_button)
+        btn_layout.addWidget(cancel_button)
+        layout.addWidget(input_label)
+        layout.addWidget(line_edit)
+        layout.addWidget(checkbox)
+        layout.addLayout(btn_layout)
+        if dialog.exec_() == QDialog.Accepted:
             progress_dialog = QDialog(parent)
             layout = QVBoxLayout()
             close_button = QPushButton("Close")
             close_button.setVisible(False)
             close_button.clicked.connect(progress_dialog.close)
-            progress_label = QLabel("Adding catalog %s.." % text)
+            catalog_src = line_edit.text().strip()
+            progress_label = QLabel("Adding catalog %s.." % catalog_src)
             layout.addWidget(progress_label)
             progressbar = QProgressBar()
             progressbar.setRange(0, 0)
@@ -134,21 +153,33 @@ class AlbumGUI(QObject):
             try:
 
                 # Create worker
-                worker = Worker(self.album_instance.add_catalog, {"catalog_src": text})
+                worker = Worker(self.album_instance.add_catalog, {"catalog_src": catalog_src})
 
                 worker.handler.task_finished.connect(self.collection_changed)
                 worker.handler.task_finished.connect(lambda: progressbar.setVisible(False))
                 worker.handler.task_finished.connect(lambda: close_button.setVisible(True))
-                worker.handler.task_finished.connect(lambda: progress_label.setText("Successfully added catalog %s." % text))
+                if checkbox.isChecked():
+                    worker.handler.task_finished.connect(lambda: progress_dialog.close())
+                    worker.handler.task_finished.connect(lambda: self.install_all_solutions_from_catalog(catalog_src))
+                else:
+                    worker.handler.task_finished.connect(lambda: progress_label.setText("Successfully added catalog %s." % catalog_src))
 
                 # Start the worker
                 self.threadpool.start(worker)
                 progress_dialog.exec_()
 
             except Exception as e:
-                self.album_instance.remove_catalog_by_src(text)
+                self.album_instance.remove_catalog_by_src(catalog_src)
                 display_error(str(e))
                 progress_dialog.close()  # Close the progress dialog in case of error
+
+    def install_all_solutions_from_catalog(self, catalog_src):
+        install_actions = generate_install_all_actions(self.album_instance, catalog_src)
+        dialog = SolutionsActionDialog(self.album_instance, install_actions, "Install all solutions from catalog",
+                                       "Successfully added catalog %s. Would you like to install the following solutions from the catalog?" % catalog_src,
+                                       "Install")
+        dialog.upgradeDone.connect(self.collection_changed)
+        dialog.exec_()
 
     def show_about_dialog(self, parent):
         dialog = AboutDialog(parent)
