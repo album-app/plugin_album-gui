@@ -3,12 +3,11 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent, QSize
+from PyQt5.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QEvent
 from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont, QIcon, QColor, QTextCursor
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QWidget, QMainWindow, QPushButton, QMenu, \
     QAction, QActionGroup, QSplitter, QComboBox, QStyle, QMessageBox, QTextEdit
 from album.api import Album
-from album.core.model.default_values import DefaultValues
 from packaging.version import Version
 
 import album

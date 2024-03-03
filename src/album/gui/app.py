@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
-from PyQt5.QtWidgets import QApplication, QInputDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, \
     QProgressBar, QLineEdit, QCheckBox, QHBoxLayout
 from album.api import Album
 
