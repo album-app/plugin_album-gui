@@ -88,7 +88,7 @@ class UpdateAlbumDialog(QDialog):
         self.setLayout(layout)
         self.manager = QNetworkAccessManager()
 
-        self.info_label = QLabel("In order to update your Album installation, the following steps will be executed:\n\n- the Album Installer Wizard will be downloaded\n- this application (Album) will be closed\n- the Album Installer Wizard will be executed\n- Album will be relaunched\n\nThis should not remove or deinstall any existing Album catalog or solution on your system.\n\nDo you want to run this routine?")
+        self.info_label = QLabel("This is an experimental feature. Use at your own risk. You can always rerun the install wizard from the website to update or fix an Album installation.\n\nIn order to update your Album installation, the following steps will be executed:\n\n- the Album Installer Wizard will be downloaded\n- this application (Album) will be closed\n- the Album Installer Wizard will be executed\n- Album will be relaunched\n\nThis should not remove or deinstall any existing Album catalog or solution on your system.\n\nDo you want to run this routine?")
         self.info_label.setWordWrap(True)
         layout.addWidget(self.info_label)
 

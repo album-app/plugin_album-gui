@@ -249,7 +249,7 @@ class CollectionWindow(QMainWindow):
         about = QAction("About")
         about.triggered.connect(lambda: self.open_about.emit(self))
         actions.addAction(about)
-        update_album = QAction("Update or reinstall Album")
+        update_album = QAction("Update or reinstall Album (experimental)")
         update_album.triggered.connect(lambda: self.update_album.emit(self))
         actions.addAction(update_album)
         return actions.actions()
