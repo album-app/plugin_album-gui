@@ -1,8 +1,6 @@
-from copy import deepcopy
-from distutils.version import LooseVersion
-
 import packaging.version
 from album.api import Album
+from copy import deepcopy
 
 from album.gui.dialog.update_action_item import UpdateActionItem, UpdateAction
 

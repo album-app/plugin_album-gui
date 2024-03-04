@@ -1,10 +1,8 @@
 import platform
-import shutil
 import sys
 from pathlib import Path
 
 from album.api import Album
-from album.core.api.controller.environment_manager import IEnvironmentManager
 
 from album.gui.include.pyshortcuts import make_shortcut
 

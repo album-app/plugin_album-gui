@@ -46,6 +46,11 @@ class SolutionStatus(QWidget):
         # self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
         self.set_active()
 
+    def set_solution_unfinished(self):
+        self.status_widget.setVisible(True)
+        self.status_label.setText(self._get_progress_text())
+        self.continue_btn.setVisible(False)
+
     def set_solution_finished(self):
         self.status_widget.setVisible(False)
         self.status_label.setText(self._get_finished_text())

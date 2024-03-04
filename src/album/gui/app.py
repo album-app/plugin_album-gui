@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
-from PyQt5.QtWidgets import QApplication, QInputDialog, QDialog, QVBoxLayout, QLabel, QPushButton, \
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, \
     QProgressBar, QLineEdit, QCheckBox, QHBoxLayout
 from album.api import Album
 
@@ -270,6 +270,7 @@ class AlbumGUI(QObject):
 
     def restart_run(self, win):
         win.get_run_widget().run_output.clear()
+        win.get_run_widget().set_solution_unfinished()
         return win.show_pre_run()
 
     @staticmethod
