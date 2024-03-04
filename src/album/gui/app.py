@@ -270,6 +270,7 @@ class AlbumGUI(QObject):
 
     def restart_run(self, win):
         win.get_run_widget().run_output.clear()
+        win.get_run_widget().set_solution_unfinished()
         return win.show_pre_run()
 
     @staticmethod
