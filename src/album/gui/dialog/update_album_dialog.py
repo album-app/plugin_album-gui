@@ -16,8 +16,6 @@ from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushBut
 from album.core.utils.operations.file_operations import force_remove
 from album.runner.album_logging import get_active_logger
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class Downloader(QThread):
 
