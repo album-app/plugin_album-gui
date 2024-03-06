@@ -117,10 +117,19 @@ def generate_update_actions(catalogs, actions, index=0):
 
 def generate_install_all_actions(album_instance, catalog_src):
     actions = []
+
+    catalogs = []
     for catalog in album_instance.get_index_as_dict()["catalogs"]:
         if catalog["src"] == catalog_src:
-            for solution in catalog["solutions"]:
-                actions.append(UpdateActionItem(UpdateAction.INSTALL, catalog, solution))
+            catalog = deepcopy(catalog)
+            catalog["solutions"] = group_solutions_by_version(catalog)
+            catalogs.append(catalog)
+
+    for catalog in catalogs:
+        for solution_key in catalog["solutions"]:
+            versions = catalog["solutions"][solution_key]
+            recent_version = versions[len(versions)-1]
+            actions.append(UpdateActionItem(UpdateAction.INSTALL, catalog, recent_version))
     return actions
 
 
