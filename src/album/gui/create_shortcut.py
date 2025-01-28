@@ -23,14 +23,10 @@ def create_shortcut(album_instance: Album, args=None, command="album gui"):
     if not Path(album_environment_path).exists():
         # if album is installed at a different place, this should catch it
         album_environment_path = sys.prefix
-    # micromamba_executable = album_instance.configuration().micromamba_executable()
     micromamba_executable = get_mamba_exe(
         album_instance.configuration().micromamba_base_path()
     )
-    if micromamba_executable:
-        package_manager = micromamba_executable
-    else:
-        package_manager = album_instance.configuration().conda_executable()
+    package_manager = micromamba_executable
     solution_environments_path = album_instance.configuration().environments_path()
     _create_shortcut_from_environment_and_executable(
         album_base_path,

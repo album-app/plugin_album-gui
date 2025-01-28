@@ -23,6 +23,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
 
             album = Album.Builder().base_cache_path(Path(temp_dir).joinpath("album")).build()
+            album._controller.environment_manager().ensure_micromamba_is_configured()
 
             temp_dir = Path(temp_dir)
 
@@ -68,6 +69,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             base_cache_path = Path(temp_dir).joinpath("album")
             album = Album.Builder().base_cache_path(base_cache_path).build()
+            album._controller.environment_manager().ensure_micromamba_is_configured()
 
             temp_dir = Path(temp_dir)
 
@@ -114,6 +116,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
 
             album = Album.Builder().base_cache_path(Path(temp_dir).joinpath("album")).build()
+            album._controller.environment_manager().ensure_micromamba_is_configured()
 
             temp_dir = Path(temp_dir)
 
