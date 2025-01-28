@@ -22,7 +22,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
 
-            # print("Python environment path:", env_path)
             album = Album.Builder().base_cache_path(Path(temp_dir).joinpath("album")).build()
 
             temp_dir = Path(temp_dir)
@@ -32,15 +31,8 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             create_shortcut(album, command="album gui --help")
 
-            # self.print_directory_contents(temp_dir)
             desktop_file = folders.desktop.joinpath("Album.desktop")
             self.assertTrue(desktop_file.exists())
-            # with open(desktop_file, 'r') as file:
-            #     file_content = file.readlines()
-
-            # Print the content of the file
-            # print("File content:")
-            # print("".join(file_content))
 
             config = configparser.ConfigParser(strict=False)
             config.read(desktop_file)
@@ -50,13 +42,11 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             self.assertIsNotNone(exec_command)
             result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env={})
             stdout = result.stdout
-            # print('Command Output:', stdout)
             self.assertIn("usage: album gui", stdout)
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
 
             exec_command = exec_command.replace("gui --help", " install %s" % solution_path)
-            print(exec_command)
             result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env={})
             stdout = result.stdout
             self.assertIn("Installed name!", stdout)
@@ -76,7 +66,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
 
-            # print("Python environment path:", env_path)
             base_cache_path = Path(temp_dir).joinpath("album")
             album = Album.Builder().base_cache_path(base_cache_path).build()
 
@@ -93,32 +82,19 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             # make sure that the variables are not set already to ensure they are correctly set in the bat file
             env_copy = os.environ.copy()
-            for var in ['ALBUM_CONDA_PATH', 'ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX']:
+            for var in ['ALBUM_CONDA_PATH', 'ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX', 'MAMBA_EXE']:
                 env_copy.pop(var, None)
 
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
-                print('Command Output:', result.stdout)
             except subprocess.CalledProcessError as e:
                 self.fail('Error: %s' % e)
 
             stdout = result.stdout
-            # print('Command Output:', stdout)
             self.assertIn("usage: album gui", stdout)
 
             desktop_file = Path(folders.desktop).joinpath("Album.lnk")
             self.assertTrue(desktop_file.exists())
-            #
-            # try:
-            #     result = subprocess.run(f'start /wait {str(desktop_file)}', shell=True, check=True, capture_output=True,
-            #                             text=True, env=env_copy)
-            #     print('Command Output:', result.stdout)
-            # except subprocess.CalledProcessError as e:
-            #     self.fail('Error: %s' % e)
-            #
-            # stdout = result.stdout
-            # # print('Command Output:', stdout)
-            # self.assertIn("usage: album gui", stdout)
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
 
@@ -126,7 +102,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
-                print('Command Output:', result.stdout)
             except subprocess.CalledProcessError as e:
                 self.fail('Error: %s' % e)
             stdout = result.stdout
@@ -138,7 +113,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
 
-            # print("Python environment path:", env_path)
             album = Album.Builder().base_cache_path(Path(temp_dir).joinpath("album")).build()
 
             temp_dir = Path(temp_dir)
@@ -148,7 +122,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             create_shortcut(album, command="album gui --help")
 
-            # self.print_directory_contents(temp_dir)
 
             app_path = Path(folders.desktop).joinpath("Album.app")
             self.assertTrue(app_path.exists())
@@ -158,13 +131,9 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             with open(str(startup_script_path), 'r') as file:
                 startup_script = file.read()
 
-            # print(startup_script)
-
             script_path = str(temp_dir.joinpath('script.sh'))
             with open(script_path, 'w') as file:
                 file.write(startup_script)
-
-            print(startup_script)
 
             Path(script_path).chmod(Path(script_path).stat().st_mode | 0o111)
             try:
@@ -174,7 +143,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
                 self.fail(error_message)
 
             stdout = result.stdout
-            # print(stdout)
             self.assertIn("usage: album gui", stdout)
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
@@ -182,8 +150,6 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             modified_script = startup_script.replace("album gui --help", "album install %s" % solution_path)
             with open(script_path, 'w') as file:
                 file.write(modified_script)
-
-            print(modified_script)
 
             try:
                 result = subprocess.run(['bash', script_path], capture_output=True, text=True, check=True, env={})
