@@ -45,7 +45,6 @@ def _create_shortcut_from_environment_and_executable(
     command,
 ):
     env_vars = {
-        "ALBUM_CONDA_PATH": str(package_manager),
         "ALBUM_BASE_CACHE_PATH": str(album_base_path),
     }
     if "micromamba" in str(package_manager).lower():
