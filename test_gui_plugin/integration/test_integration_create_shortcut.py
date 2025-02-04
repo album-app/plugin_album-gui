@@ -84,7 +84,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             # make sure that the variables are not set already to ensure they are correctly set in the bat file
             env_copy = os.environ.copy()
-            for var in ['ALBUM_CONDA_PATH', 'ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX', 'MAMBA_EXE']:
+            for var in ['ALBUM_CONDA_PATH', 'ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX']:
                 env_copy.pop(var, None)
 
             try:
