@@ -198,7 +198,7 @@ pypi deploy:
     - echo "deploying pypi version $VERSION"
     - echo "using pypi deploy user $PYPI_DEPLOY_USER"
   script:
-    - pip install twine
+    - pip install twine setuptools
     - python setup.py sdist bdist_wheel
     - TWINE_PASSWORD=$PYPI_DEPLOY_TOKEN TWINE_USERNAME=$PYPI_DEPLOY_USER python -m twine upload --repository-url https://upload.pypi.org/legacy/  dist/*
   rules:
