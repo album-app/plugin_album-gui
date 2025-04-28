@@ -29,7 +29,7 @@
     - '& $7ZIP_EXE x micromamba.tar.bz2 -aoa'
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + (Join-Path -Path (Get-Location) -ChildPath micromamba_installation))'
     - '$progressPreference = $oldProgressPreference'
-    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album album-gui -c conda-forge python=3.10'
+    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album album-gui -c conda-forge python=$env:TEST_PYTHON_VERSION'
     - '.\micromamba_installation\Library\bin\micromamba.exe run -n album pip install --no-cache-dir $Env:CI_PROJECT_DIR'
   tags:
     - windows
@@ -59,7 +59,7 @@
     - apt install -y bzip2
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
-    - $CI_PROJECT_DIR/bin/micromamba create -y -n album -c conda-forge python=3.10 album-gui
+    - $CI_PROJECT_DIR/bin/micromamba create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION album-gui
     - $CI_PROJECT_DIR/bin/micromamba run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $CI_PROJECT_DIR/bin/micromamba run -n album python -V
     - $CI_PROJECT_DIR/bin/micromamba run -n album pip list
@@ -89,7 +89,7 @@
     - mkdir -p $tmpdir/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6 | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$tmpdir/bin/micromamba
-    - $MICROMAMBA_EXECUTABLE create -y -n album album-gui -c conda-forge python=3.10
+    - $MICROMAMBA_EXECUTABLE create -y -n album album-gui -c conda-forge python=$TEST_PYTHON_VERSION
     - $MICROMAMBA_EXECUTABLE run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $MICROMAMBA_EXECUTABLE run -n album python -V
     - $MICROMAMBA_EXECUTABLE run -n album pip list
@@ -163,7 +163,7 @@ gitlab release:
 
 
 gitlab pypi deploy:
-  image: python:latest
+  image: python:$TEST_PYTHON_VERSION
   stage: deploy
   tags:
     - DeployRunner
@@ -185,7 +185,7 @@ gitlab pypi deploy:
         - setup.cfg
 
 pypi deploy:
-  image: python:latest
+  image: python:$TEST_PYTHON_VERSION
   stage: deploy
   tags:
     - DeployRunner
