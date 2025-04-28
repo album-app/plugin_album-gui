@@ -59,7 +59,7 @@
     - apt install -y bzip2
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
-    - $CI_PROJECT_DIR/bin/micromamba create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION album-gui
+    - $CI_PROJECT_DIR/bin/micromamba create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION album-gui
     - $CI_PROJECT_DIR/bin/micromamba run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $CI_PROJECT_DIR/bin/micromamba run -n album python -V
     - $CI_PROJECT_DIR/bin/micromamba run -n album pip list
