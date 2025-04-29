@@ -5,7 +5,6 @@ from pathlib import Path
 from album.api import Album
 
 from album.gui.include.pyshortcuts import make_shortcut
-from album.core.controller.micromamba_manager import get_mamba_exe
 
 
 def get_icon_path():
@@ -23,10 +22,7 @@ def create_shortcut(album_instance: Album, args=None, command="album gui"):
     if not Path(album_environment_path).exists():
         # if album is installed at a different place, this should catch it
         album_environment_path = sys.prefix
-    micromamba_executable = get_mamba_exe(
-        album_instance.configuration().micromamba_base_path()
-    )
-    package_manager = micromamba_executable
+    package_manager = album_instance._controller.environment_manager().get_environment_handler().get_package_manager().get_install_environment_executable()
     solution_environments_path = album_instance.configuration().environments_path()
     _create_shortcut_from_environment_and_executable(
         album_base_path,

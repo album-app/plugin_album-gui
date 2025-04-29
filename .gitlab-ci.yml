@@ -69,6 +69,7 @@
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-environments.git@dev
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album.git@dev
+    - set +e +u; set +o pipefail
     - $MICROMAMBA_EXECUTABLE run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $MICROMAMBA_EXECUTABLE run -n album python -V
     - $MICROMAMBA_EXECUTABLE run -n album pip list
@@ -103,6 +104,7 @@
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev'
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-environments.git@dev'
     - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album.git@dev'
+    - set +e +u; set +o pipefail
     - $MICROMAMBA_EXECUTABLE run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $MICROMAMBA_EXECUTABLE run -n album python -V
     - $MICROMAMBA_EXECUTABLE run -n album pip list
