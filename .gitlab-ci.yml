@@ -246,7 +246,7 @@ integration tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - QT_QPA_PLATFORM=offscreen $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
+    - $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
 
 
 # Macos Tests
