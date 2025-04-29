@@ -59,6 +59,9 @@
     - apt update
     - apt install -y curl
     - apt install -y bzip2
+    - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata  # dependency for pyqt5
+    - apt install -y libglib2.0-0  # dependency for pyqt5
+    - apt install -y libgl1-mesa-dev  # dependency for pyqt5
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$CI_PROJECT_DIR/bin/micromamba
