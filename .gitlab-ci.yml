@@ -229,7 +229,7 @@ cmdline linux:
   stage: build
   script:
     # album commands
-    - $$MICROMAMBA_EXECUTABLE run -n album album gui -h
+    - $MICROMAMBA_EXECUTABLE run -n album album gui -h
 
 unit tests linux micromamba:
   extends: .linux_base_template_micromamba
