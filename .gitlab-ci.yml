@@ -235,7 +235,7 @@ unit tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - $$MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/unit/run_all_unit.py
+    - $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/unit/run_all_unit.py
 
 integration tests linux micromamba:
   extends: .linux_base_template_micromamba
