@@ -59,9 +59,8 @@
     - apt update
     - apt install -y curl
     - apt install -y bzip2
-    - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata  # dependency for pyqt5
-    - apt install -y libglib2.0-0  # dependency for pyqt5
-    - apt install -y libgl1-mesa-dev  # dependency for pyqt5
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends tzdata  # system dependency for pyqt5
+    - apt install -y  libqt5core5a libqt5gui5   # system dependency for pyqt5
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$CI_PROJECT_DIR/bin/micromamba
@@ -246,7 +245,8 @@ integration tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
+    # QT_QPA_PLATFORM =offscreen is needed to run the tests in a headless environment, QT system dependencies needed!
+    - QT_QPA_PLATFORM=offscreen $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
 
 
 # Macos Tests
