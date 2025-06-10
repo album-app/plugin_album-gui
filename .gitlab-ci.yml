@@ -15,9 +15,6 @@
 .windows_base_template_micromamba:
   before_script:
     - 'echo "We are in path: $pwd "'
-    - 'if(-Not (Test-Path .\downloads)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\downloads} else { echo ".\downloads cache found! with content:"; Get-ChildItem -Path .\downloads}'
-    - 'if(-Not (Test-Path .\.album)) {echo "Cache .album not found! Creating..."; New-Item -ItemType Directory -Force -Path .\.album} else { echo ".\.album cache found! with content:"; Get-ChildItem -Path .\.album}'
-    - 'if(-Not (Test-Path .\micromamba)) {echo "Cache micromamba not found! Creating..."; New-Item -ItemType Directory -Force -Path .\micromamba} else { echo ".\micromamba cache found! with content:"; Get-ChildItem -Path .\micromamba}'
     - '$7ZIP_EXE=(Join-Path $env:ProgramFiles -ChildPath 7-Zip\7z.exe)'
     - '$7ZIP_INSTALLER=(Join-Path downloads -ChildPath 7z.exe)'
     - '$Env:USERPROFILE=$pwd'
@@ -29,7 +26,13 @@
     - '& $7ZIP_EXE x micromamba.tar.bz2 -aoa'
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + (Join-Path -Path (Get-Location) -ChildPath micromamba_installation))'
     - '$progressPreference = $oldProgressPreference'
-    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album album-gui -c conda-forge python=3.10'
+    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION'
+    - 'Write-Output "CI_COMMIT_REF_NAME: $env:CI_COMMIT_REF_NAME"'
+    - 'Write-Output "ALBUM_DEV_ONLY: $env:ALBUM_DEV_ONLY"'
+    - 'if($env:ALBUM_DEV_ONLY -match "True") { echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ONLY GITLAB-RUNNER VARIABLE." }'
+    - 'if($env:ALBUM_DEV_ONLY -match "True") { .\micromamba_installation\Library\bin\micromamba.exe run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev}'
+    - 'if($env:ALBUM_DEV_ONLY -match "True") { .\micromamba_installation\Library\bin\micromamba.exe run -n album pip install git+https://gitlab.com/album-app/album-environments.git@dev}'
+    - 'if($env:ALBUM_DEV_ONLY -match "True") { .\micromamba_installation\Library\bin\micromamba.exe run -n album pip install git+https://gitlab.com/album-app/album.git@dev}'
     - '.\micromamba_installation\Library\bin\micromamba.exe run -n album pip install --no-cache-dir $Env:CI_PROJECT_DIR'
   tags:
     - windows
@@ -39,7 +42,6 @@
   cache:
     key: one-key-to-rule-them-all-windows
     paths:
-      - downloads
       - .cache\pip
 
 
@@ -57,12 +59,22 @@
     - apt update
     - apt install -y curl
     - apt install -y bzip2
+    - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends tzdata  # system dependency for pyqt5
+    - apt install -y  libqt5core5a libqt5gui5   # system dependency for pyqt5
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
-    - $CI_PROJECT_DIR/bin/micromamba create -y -n album -c conda-forge python=3.10 album-gui
-    - $CI_PROJECT_DIR/bin/micromamba run -n album pip install --no-cache-dir $CI_PROJECT_DIR
-    - $CI_PROJECT_DIR/bin/micromamba run -n album python -V
-    - $CI_PROJECT_DIR/bin/micromamba run -n album pip list
+    - MICROMAMBA_EXECUTABLE=$CI_PROJECT_DIR/bin/micromamba
+    - $MICROMAMBA_EXECUTABLE create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION git
+    - echo $CI_COMMIT_REF_NAME
+    - echo $ALBUM_DEV_ONLY
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && echo 'CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ONLY GITLAB-RUNNER VARIABLE.'
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-environments.git@dev
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album.git@dev
+    - set +e +u; set +o pipefail
+    - $MICROMAMBA_EXECUTABLE run -n album pip install --no-cache-dir $CI_PROJECT_DIR
+    - $MICROMAMBA_EXECUTABLE run -n album python -V
+    - $MICROMAMBA_EXECUTABLE run -n album pip list
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
   cache:
@@ -89,7 +101,12 @@
     - mkdir -p $tmpdir/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6 | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$tmpdir/bin/micromamba
-    - $MICROMAMBA_EXECUTABLE create -y -n album album-gui -c conda-forge python=3.10
+    - $MICROMAMBA_EXECUTABLE create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ONLY GITLAB-RUNNER VARIABLE."
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-environments.git@dev
+    - set -euo pipefail; [[ "${ALBUM_DEV_ONLY}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album.git@dev
+    - set +e +u; set +o pipefail
     - $MICROMAMBA_EXECUTABLE run -n album pip install --no-cache-dir $CI_PROJECT_DIR
     - $MICROMAMBA_EXECUTABLE run -n album python -V
     - $MICROMAMBA_EXECUTABLE run -n album pip list
@@ -163,7 +180,7 @@ gitlab release:
 
 
 gitlab pypi deploy:
-  image: python:latest
+  image: python:$TEST_PYTHON_VERSION
   stage: deploy
   tags:
     - DeployRunner
@@ -185,7 +202,7 @@ gitlab pypi deploy:
         - setup.cfg
 
 pypi deploy:
-  image: python:latest
+  image: python:$TEST_PYTHON_VERSION
   stage: deploy
   tags:
     - DeployRunner
@@ -216,19 +233,20 @@ cmdline linux:
   stage: build
   script:
     # album commands
-    - $CI_PROJECT_DIR/bin/micromamba run -n album album gui -h
+    - $MICROMAMBA_EXECUTABLE run -n album album gui -h
 
 unit tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - $CI_PROJECT_DIR/bin/micromamba run -n album python -m unittest test_gui_plugin/unit/run_all_unit.py
+    - $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/unit/run_all_unit.py
 
 integration tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - QT_QPA_PLATFORM=offscreen $CI_PROJECT_DIR/bin/micromamba run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
+    # QT_QPA_PLATFORM =offscreen is needed to run the tests in a headless environment, QT system dependencies needed!
+    - QT_QPA_PLATFORM=offscreen $MICROMAMBA_EXECUTABLE run -n album python -m unittest test_gui_plugin/integration/run_all_integration.py
 
 
 # Macos Tests
