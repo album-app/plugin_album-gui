@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "album-gui"
+version = "0.5.0"
+authors = [
+    {name = "Deborah Schmidt", email = "mail@frauzufall.de"},
+    {name = "Jan Philipp Albrecht", email = "j.p.albrecht@fu-berlin.de"},
+    {name = "Kyle Harrington", email = "album@kyleharrington.com"},
+]
+maintainers = [
+    {name = "Deborah Schmidt", email = "mail@frauzufall.de"},
+    {name = "Jan Philipp Albrecht", email = "j.p.albrecht@fu-berlin.de"},
+    {name = "Kyle Harrington", email = "album@kyleharrington.com"},
+    {name = "Lucas Rieckert", email = "lucas.rieckert@outlook.de"},
+    {name = "Maximilian Otto", email = "maxotto45@gmail.com"},
+]
+description = "Album is a framework for unifying computational tools across frameworks, languages, and environments."
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+keywords = ["virtual environments", "imaging", "data analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Utilities"
+]
+requires-python = ">=3.10"
+dependencies = [
+    "album>=0.12,<0.13",
+    "PyQt5>=5.15.6",
+    'pywin32>=303 ; platform_system== "Windows"',
+]
+
+[project.urls]
+Documentation = "https://docs.album.solutions/en/latest/"
+Homepage = "https://album.solutions/"
+DeveloperDocumentation = "https://gitlab.com/album-app/album/-/wikis/home"
+Repository = "https://gitlab.com/album-app/plugins/album-gui"
+Tracker= "https://gitlab.com/album-app/plugins/album-gui/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ['*.png', '*.ico', '*.icns']
+
+[project.entry-points."console_parsers_album"]
+gui="album.gui.commandline:create_parser_gui"
+add-shortcut="album.gui.commandline:create_parser_shortcut"
+
+[project.entry-points."album_gui_plugins"]
+string="album.gui.widgets.argument_widget_plugins:create_gui_string"
+integer="album.gui.widgets.argument_widget_plugins:create_gui_integer"
+float="album.gui.widgets.argument_widget_plugins:create_gui_float"
+double="album.gui.widgets.argument_widget_plugins:create_gui_double"
+boolean="album.gui.widgets.argument_widget_plugins:create_gui_boolean"
+file="album.gui.widgets.argument_widget_plugins:create_gui_file"
+directory="album.gui.widgets.argument_widget_plugins:create_gui_directory"
