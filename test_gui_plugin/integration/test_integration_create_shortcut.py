@@ -91,7 +91,9 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
                 self.fail('Error: %s' % e)
 
             stdout = result.stdout
-            self.assertIn("usage: album gui", stdout)
+            # "usage: album gui [...]"" is now "usage: album python.exe [<temp path>] album gui [...] 
+            # -> checking for a another part of the output 
+            self.assertIn("[-h] [--log LOG] [--json] [--version] [solution]", stdout) 
 
             desktop_file = Path(folders.desktop).joinpath("Album.lnk")
             self.assertTrue(desktop_file.exists())
