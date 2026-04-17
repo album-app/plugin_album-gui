@@ -1,4 +1,4 @@
-import pkg_resources
+from importlib.metadata import entry_points
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QFrame, QWidget, QVBoxLayout, QLabel
 
@@ -51,7 +51,7 @@ class PreRunSolutionWidget(QWidget):
 
     def _load_plugins(self):
         self._plugins = {}
-        for entry_point in pkg_resources.iter_entry_points('album_gui_plugins'):
+        for entry_point in entry_points(group='album_gui_plugins'):
             # try:
             #     entry_point.load()
             #     self._plugins[entry_point.name] = entry_point.load()

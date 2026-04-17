@@ -36,8 +36,8 @@ class Worker(QRunnable):
         self.handler = Worker.LogHandler()
 
     def run(self):
-        get_active_logger().debug(f"starting task {self.task.id()}...")
-        logger = album_logging.configure_logging("task" + str(self.task.id()), loglevel=LogLevel.INFO)
+        get_active_logger().debug(f"starting task {self.task.task_id()}...")
+        logger = album_logging.configure_logging("task" + str(self.task.task_id()), loglevel=LogLevel.INFO)
         logger.addHandler(self.handler)
         self.task.set_log_handler(self.handler)
         try:
@@ -45,7 +45,7 @@ class Worker(QRunnable):
                 import pythoncom
                 pythoncom.CoInitialize()
             self.task.method()(**self.task.args())
-            get_active_logger().debug(f"finished task {self.task.id()}.")
+            get_active_logger().debug(f"finished task {self.task.task_id()}.")
             self.handler.task_finished.emit()
         except Exception as e:
             traceback.print_exc()

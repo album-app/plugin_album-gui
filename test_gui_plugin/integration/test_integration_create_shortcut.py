@@ -39,15 +39,26 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             exec_command = config.get('Desktop Entry', 'Exec', fallback='')
 
+            # use a clean env without album-specific vars to verify the shortcut sets them
+            env_copy = os.environ.copy()
+            for var in ['ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX']:
+                env_copy.pop(var, None)
+
             self.assertIsNotNone(exec_command)
-            result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env={})
+            try:
+                result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            except subprocess.CalledProcessError as e:
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("usage: album gui", stdout)
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
 
             exec_command = exec_command.replace("gui --help", " install %s" % solution_path)
-            result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env={})
+            try:
+                result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            except subprocess.CalledProcessError as e:
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("Installed name!", stdout)
 
@@ -88,7 +99,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
             except subprocess.CalledProcessError as e:
-                self.fail('Error: %s' % e)
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
 
             stdout = result.stdout
             # "usage: album gui [...]"" is now "usage: album python.exe [<temp path>] album gui [...] 
@@ -105,7 +116,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
             except subprocess.CalledProcessError as e:
-                self.fail('Error: %s' % e)
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("Installed name!", stdout)
 
@@ -137,9 +148,14 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             with open(script_path, 'w') as file:
                 file.write(startup_script)
 
+            # use a clean env without album-specific vars to verify the shortcut sets them
+            env_copy = os.environ.copy()
+            for var in ['ALBUM_BASE_CACHE_PATH', 'MAMBA_ROOT_PREFIX']:
+                env_copy.pop(var, None)
+
             Path(script_path).chmod(Path(script_path).stat().st_mode | 0o111)
             try:
-                result = subprocess.run(['bash', script_path], capture_output=True, text=True, check=True, env={})
+                result = subprocess.run(['bash', script_path], capture_output=True, text=True, check=True, env=env_copy)
             except subprocess.CalledProcessError as e:
                 error_message = f"Command {e.cmd} failed with error code {e.returncode}\nStandard Error Output: {e.stderr}"
                 self.fail(error_message)
@@ -154,7 +170,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
                 file.write(modified_script)
 
             try:
-                result = subprocess.run(['bash', script_path], capture_output=True, text=True, check=True, env={})
+                result = subprocess.run(['bash', script_path], capture_output=True, text=True, check=True, env=env_copy)
             except subprocess.CalledProcessError as e:
                 error_message = f"Command {e.cmd} failed with error code {e.returncode}\nStandard Error Output: {e.stderr}"
                 self.fail(error_message)
