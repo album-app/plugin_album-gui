@@ -45,14 +45,20 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
                 env_copy.pop(var, None)
 
             self.assertIsNotNone(exec_command)
-            result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            try:
+                result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            except subprocess.CalledProcessError as e:
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("usage: album gui", stdout)
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
 
             exec_command = exec_command.replace("gui --help", " install %s" % solution_path)
-            result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            try:
+                result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
+            except subprocess.CalledProcessError as e:
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("Installed name!", stdout)
 
@@ -93,7 +99,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
             except subprocess.CalledProcessError as e:
-                self.fail('Error: %s' % e)
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
 
             stdout = result.stdout
             # "usage: album gui [...]"" is now "usage: album python.exe [<temp path>] album gui [...] 
@@ -110,7 +116,7 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
             try:
                 result = subprocess.run(['cmd', '/c', str(bat_file)], shell=True, check=True, capture_output=True, text=True, env=env_copy)
             except subprocess.CalledProcessError as e:
-                self.fail('Error: %s' % e)
+                self.fail(f"Command {e.cmd} failed with exit code {e.returncode}\nStdout: {e.stdout}\nStderr: {e.stderr}")
             stdout = result.stdout
             self.assertIn("Installed name!", stdout)
 
