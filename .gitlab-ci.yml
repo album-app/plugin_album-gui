@@ -63,7 +63,7 @@ workflow:
   tags:
     - docker
   before_script:
-    - DEBIAN_FRONTEND=noninteractive apt update || (sleep 30 && apt update) && apt install -y --no-install-recommends curl bzip2 tzdata libqt5core5a libqt5gui5
+    - DEBIAN_FRONTEND=noninteractive apt update || (sleep 30 && apt update) && apt install -y --no-install-recommends ca-certificates curl bzip2 tzdata libqt5core5a libqt5gui5
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION -o /tmp/micromamba.tar.bz2
     - tar -xvjf /tmp/micromamba.tar.bz2 -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
