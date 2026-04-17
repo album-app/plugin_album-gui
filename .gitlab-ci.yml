@@ -65,8 +65,10 @@ workflow:
   before_script:
     - DEBIAN_FRONTEND=noninteractive apt update || (sleep 30 && apt update) && apt install -y --no-install-recommends curl bzip2 tzdata libqt5core5a libqt5gui5
     - mkdir -p $CI_PROJECT_DIR/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
+    - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION -o /tmp/micromamba.tar.bz2
+    - tar -xvjf /tmp/micromamba.tar.bz2 -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$CI_PROJECT_DIR/bin/micromamba
+    - $MICROMAMBA_EXECUTABLE --version
     - $MICROMAMBA_EXECUTABLE create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION git
     - echo $CI_COMMIT_REF_NAME
     - echo $ALBUM_DEV_GUI
@@ -102,8 +104,10 @@ workflow:
     - echo $tmpdir
     - echo $tmpdir > /tmp/tmpdir
     - mkdir -p $tmpdir/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
+    - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION -o $tmpdir/micromamba.tar.bz2
+    - tar -xvjf $tmpdir/micromamba.tar.bz2 -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - MICROMAMBA_EXECUTABLE=$tmpdir/bin/micromamba
+    - $MICROMAMBA_EXECUTABLE --version
     - $MICROMAMBA_EXECUTABLE create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION
     - set -euo pipefail; [[ "${ALBUM_DEV_GUI}" == "True" ]] && echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_GUI GITLAB-RUNNER VARIABLE."
     - set -euo pipefail; [[ "${ALBUM_DEV_GUI}" == "True" ]] && $MICROMAMBA_EXECUTABLE run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev
