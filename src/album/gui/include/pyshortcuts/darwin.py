@@ -128,11 +128,12 @@ export EXE={exe:s}
 export SCRIPT={script:s}
 export ARGS='{args:s}'
 """
-    text = "$EXE $SCRIPT $ARGS"
+    # eval keeps quoted arguments (e.g. paths with spaces) of EXE and SCRIPT intact
+    text = 'eval "$EXE $SCRIPT $ARGS"'
     if terminal:
         text = """
 osascript -e 'tell application "Terminal"
-   do script "'${{EXE}}\ {osascript:s}'"
+   do script "'${{EXE}}\\ {osascript:s}'"
 end tell
 '
 """

@@ -1,1 +1,2 @@
 Pyshortcuts was modified to not convert the `script` parameter into an absolute path.
+The macOS launcher runs `eval "$EXE $SCRIPT $ARGS"` so that shell-quoted arguments in `executable` and `script` (e.g. paths with spaces) are preserved.

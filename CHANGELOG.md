@@ -33,6 +33,22 @@ We use the following:
 - Argument values are passed as `--name=value`, so values starting with `-` that are not plain negative numbers
   (e.g. `-1e-05` for small negative floats, or a text like `-v`) are no longer taken for options by the solution's
   argument parser (argparse of Python 3.12 and older rejected them).
+- `album add-shortcut <solution>` ignored the solution and always created the generic "Album" shortcut. It now creates
+  an "Album - <solution>" shortcut (with its own launcher script on Windows) that runs `album gui <solution>`.
+  Relative solution paths are made absolute. `album add-shortcut` without a solution is unchanged.
+- Shortcuts did not start when the home directory contained spaces: the micromamba executable in the Windows `.bat`
+  file and the `.bat` file in the shortcut were not quoted. Paths are now quoted in the Windows, macOS and Linux
+  launchers (`%` and `&` in Windows paths are handled as well).
+- The "Update Album" dialog on macOS tried to download the installer from the `macos_installer_build` job, which
+  album-package replaced by one job per architecture. It now downloads the installer of the machine's architecture
+  (`macos_installer_build_arm64` or `macos_installer_build_x86_64`). On unsupported systems it shows a message instead
+  of requesting an invalid URL.
+- "Update Now" in the "Update Album" dialog closed Album without starting the downloaded installer on Windows and
+  macOS: the command passed to `cmd.exe` and to Terminal (via `osascript`) was wrapped in literal double quotes, which
+  cmd reports as "not recognized" and which is an AppleScript syntax error. The installer path is now quoted for each
+  platform (also for the Linux terminal), and an error is logged if no terminal can be opened.
+- The name of a per-solution shortcut created from a URL no longer contains the query or fragment of the URL
+  (e.g. `?inline=false`).
 
 ## [0.5.1]
 
