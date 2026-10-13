@@ -54,7 +54,8 @@ class TestIntegrationCreateShortcut(unittest.TestCase):
 
             solution_path = str(Path(__file__).parent.parent / 'resources' / 'test_solution.py')
 
-            exec_command = exec_command.replace("gui --help", " install %s" % solution_path)
+            # --log DEBUG: show the environment creation output in the failure message of this test
+            exec_command = exec_command.replace("gui --help", " install --log DEBUG %s" % solution_path)
             try:
                 result = subprocess.run(shlex.split(exec_command), capture_output=True, text=True, check=True, env=env_copy)
             except subprocess.CalledProcessError as e:
