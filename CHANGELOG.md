@@ -16,6 +16,12 @@ We use the following:
 
 ## [unreleased]
 
+### Changed
+
+- "Update Album" with another album-package branch than `main` (the developer option of the dialog) downloads the
+  installer of the `<name>_installer_build_test` jobs. album-package keeps only main's installers, the ones of other
+  branches are built by these jobs and expire after a day.
+
 ### Fixed
 
 - The run form of a solution could not be opened when a `file` or `directory` argument had a default value
