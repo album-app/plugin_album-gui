@@ -285,8 +285,9 @@ class AlbumGUI(QObject):
     def _construct_args(solution, values):
         res = [solution]
         for name in values:
-            res.append("--%s" % name)
-            res.append(values[name])
+            # one "--name=value" element: argparse would read a separate value starting with "-" that is not a plain
+            # negative number (e.g. "-1e-05", or a text like "-v") as an option and fail with "expected one argument"
+            res.append("--%s=%s" % (name, values[name]))
         return res
 
     @staticmethod

@@ -37,6 +37,7 @@ class PreRunSolutionWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self._widgets = {}
         self._required = []
+        self._omit_if_default = []
 
     def _create_actions_box(self):
         res = QWidget()
@@ -63,6 +64,7 @@ class PreRunSolutionWidget(QWidget):
 
     def add_arguments(self, arguments):
         self._widgets = {}
+        self._omit_if_default = []
         for arg in arguments:
             self._add_argument(arg)
         max_height = 0
@@ -78,6 +80,9 @@ class PreRunSolutionWidget(QWidget):
         if ("required" not in argument or argument["required"]) and "default" not in argument:
             if arg_name not in self._required:
                 self._required.append(arg_name)
+        if "default" in argument and not argument.get("required", False):
+            # if the argument is not passed, the argument parser of the solution applies the declared default itself
+            self._omit_if_default.append(arg_name)
         if "type" in argument:
             arg_type = argument["type"]
         else:
@@ -92,10 +97,21 @@ class PreRunSolutionWidget(QWidget):
     def get_values(self):
         res = {}
         for name in self._widgets:
-            value = self._widgets[name].get_wrapped_value()
+            widget = self._widgets[name]
+            if name in self._omit_if_default and self._shows_default_value(widget):
+                # only pass values the user changed: the solution then gets its default with the declared type (the
+                # string "False" or "0" would be truthy) and full precision (the spin box rounds to 6 decimals)
+                continue
+            value = widget.get_wrapped_value()
             if value is not None:
                 res[name] = str(value)
         return res
+
+    @staticmethod
+    def _shows_default_value(widget):
+        # widgets of other plugins may not implement this
+        shows_default_value = getattr(widget, "shows_default_value", None)
+        return shows_default_value is not None and shows_default_value()
 
     def check_required_fields(self) -> bool:
         values = self.get_values()
