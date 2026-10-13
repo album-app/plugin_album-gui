@@ -31,10 +31,18 @@ class TestUnitUpdateAlbumDialog(unittest.TestCase):
         self.assertEqual((MACOS_X86_64_URL, "album_installer"), get_installer_download("main", "Darwin", "x86_64"))
 
     def test_get_installer_download_branch(self):
+        # other branches than main build their installers in the <name>_installer_build_test jobs
         url, _ = get_installer_download("dev", "Darwin", "arm64")
         self.assertEqual(
             "https://gitlab.com/album-app/plugins/album-package/-/jobs/artifacts/dev/raw/installer/"
-            "arm64/album_installer.app?job=macos_installer_build_arm64", url)
+            "arm64/album_installer.app?job=macos_installer_build_arm64_test", url)
+        branch = "https://gitlab.com/album-app/plugins/album-package/-/jobs/artifacts/my-feature/raw/installer/"
+        self.assertEqual((branch + "album_installer.exe?job=windows_installer_build_test", "album_installer.exe"),
+                         get_installer_download("my-feature", "Windows", "AMD64"))
+        self.assertEqual((branch + "album_installer?job=linux_installer_build_test", "album_installer"),
+                         get_installer_download("my-feature", "Linux", "x86_64"))
+        self.assertEqual((branch + "x86_64/album_installer.app?job=macos_installer_build_x86_64_test", "album_installer"),
+                         get_installer_download("my-feature", "Darwin", "x86_64"))
 
     @patch("album.gui.dialog.update_album_dialog.platform.machine", return_value="arm64")
     @patch("album.gui.dialog.update_album_dialog.platform.system", return_value="Darwin")

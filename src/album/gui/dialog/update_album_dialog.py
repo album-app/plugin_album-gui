@@ -22,17 +22,20 @@ def get_installer_download(branch, system=None, machine=None):
     """Return the URL of the Album Installer Wizard built by the album-package CI and the file name to save it as.
 
     The artifact paths and job names have to match the installer build jobs in the .gitlab-ci.yml of album-package.
+    The installers of main are built by the <name>_installer_build jobs and kept, the installers of any other branch
+    by the <name>_installer_build_test jobs and only kept for a day.
     """
     system = platform.system() if system is None else system
     machine = platform.machine() if machine is None else machine
     url = f"https://gitlab.com/album-app/plugins/album-package/-/jobs/artifacts/{branch}/raw/installer/"
+    suffix = "" if branch == "main" else "_test"
     if system == "Windows":
-        return url + "album_installer.exe?job=windows_installer_build", "album_installer.exe"
+        return url + f"album_installer.exe?job=windows_installer_build{suffix}", "album_installer.exe"
     elif system == "Linux":
-        return url + "album_installer?job=linux_installer_build", "album_installer"
+        return url + f"album_installer?job=linux_installer_build{suffix}", "album_installer"
     elif system == "Darwin":  # macOS, there is one installer per architecture
         arch = "arm64" if machine.lower() in ("arm64", "aarch64") else "x86_64"
-        return url + f"{arch}/album_installer.app?job=macos_installer_build_{arch}", "album_installer"
+        return url + f"{arch}/album_installer.app?job=macos_installer_build_{arch}{suffix}", "album_installer"
     raise NotImplementedError("Updating Album is not supported on %s." % system)
 
 
