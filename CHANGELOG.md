@@ -55,6 +55,9 @@ We use the following:
   platform (also for the Linux terminal), and an error is logged if no terminal can be opened.
 - The name of a per-solution shortcut created from a URL no longer contains the query or fragment of the URL
   (e.g. `?inline=false`).
+- A progress bar of a solution, such as one of tqdm, became a line in the log of the running solution for every
+  update (album#217). With album-environments that marks these updates (album-environments!33), the log shows the
+  first state of the bar, one state every 30 seconds and its final state.
 
 ## [0.5.1]
 

@@ -9,6 +9,7 @@ from test_gui_plugin.unit.gui.dialog import test_unit_update_solutions_dialog
 from test_gui_plugin.unit.gui.widgets import test_unit_argument_widget_plugins
 from test_gui_plugin.unit.gui.widgets import test_unit_pre_run_solution_widget
 from test_gui_plugin.unit.gui import test_unit_app
+from test_gui_plugin.unit.gui import test_unit_worker
 
 
 def main():
@@ -23,6 +24,7 @@ def main():
     suite.addTests(loader.loadTestsFromModule(test_unit_argument_widget_plugins))
     suite.addTests(loader.loadTestsFromModule(test_unit_pre_run_solution_widget))
     suite.addTests(loader.loadTestsFromModule(test_unit_app))
+    suite.addTests(loader.loadTestsFromModule(test_unit_worker))
 
     runner = unittest.TextTestRunner(verbosity=3)
     result = runner.run(suite)
