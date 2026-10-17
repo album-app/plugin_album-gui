@@ -6,6 +6,7 @@ import traceback
 from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
 from album.core.api.model.task import ILogHandler
 from album.core.model.task import Task
+from album.gui.progress_filter import ProgressIntervalFilter
 from album.runner import album_logging
 from album.runner.album_logging import get_active_logger, LogLevel
 
@@ -20,6 +21,7 @@ class Worker(QRunnable):
         def __init__(self):
             QObject.__init__(self)
             ILogHandler.__init__(self)
+            self.addFilter(ProgressIntervalFilter())  # a progress bar once per 30 s, not per second
             self._records = []
 
         def emit(self, record: logging.LogRecord) -> None:
