@@ -21,6 +21,7 @@ We use the following:
 - "Update Album" with another album-package branch than `main` (the developer option of the dialog) downloads the
   installer of the `<name>_installer_build_test` jobs. album-package keeps only main's installers, the ones of other
   branches are built by these jobs and expire after a day.
+- Python 3.14 is listed among the supported Python versions; the CI tests it
 
 ### Fixed
 
