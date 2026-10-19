@@ -22,6 +22,7 @@ We use the following:
   installer of the `<name>_installer_build_test` jobs. album-package keeps only main's installers, the ones of other
   branches are built by these jobs and expire after a day.
 - Python 3.14 is listed among the supported Python versions; the CI tests it
+- requires album 1.0 (`album>=1.0.0,<2.0.0`, was `album>=0.12,<0.13`)
 
 ### Fixed
 
