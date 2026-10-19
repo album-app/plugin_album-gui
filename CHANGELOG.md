@@ -16,6 +16,8 @@ We use the following:
 
 ## [unreleased]
 
+## [0.5.2]
+
 ### Changed
 
 - "Update Album" with another album-package branch than `main` (the developer option of the dialog) downloads the
@@ -73,7 +75,8 @@ We use the following:
 - pyproject.toml over setup.cfg
 - Changelog to repository 
 
-[unreleased]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.1...HEAD
+[unreleased]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.2...HEAD
+[0.5.2]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.1...v0.5.2
 [0.5.1]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.0...v0.5.1
 [0.5.0]: https://gitlab.com/album-app/album-gui/-/compare/v0.4.5...v0.5.0
 [0.4.5]: https://gitlab.com/album-app/album-gui/-/compare/v0.4.4...v0.4.5
