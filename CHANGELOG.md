@@ -31,6 +31,11 @@ We use the following:
   so negative values could not be entered and negative defaults were silently replaced by 0.
 - Default values `0`, `0.0`, `False` and `""` are now applied (and offered by "set to default") instead of being
   treated as if the argument had no default.
+- The run form takes the arguments as the installed solution declares them, not from its catalog entry (album#240).
+  The catalog entry has no default `None`, so the form asked for a value of such an argument, which the solution takes
+  as optional; it had no `0`, `False` or `""` either where the catalog held the same argument without a default, and
+  the `required` of another solution with the same argument. If the installed solution cannot be read, the form shows
+  the arguments of the catalog entry, with a warning.
 - The run form only passes the arguments whose value was changed. Unchanged defaults are applied by the solution
   itself, with their declared type and precision: before, an argument without type and the default `False` received
   the truthy string `"0"`, and a `float` default like `1e-07` was rounded to `0.0` by the spin box.

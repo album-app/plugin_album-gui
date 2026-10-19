@@ -2,6 +2,7 @@ from PyQt5.QtCore import pyqtSignal, QThreadPool, QObject
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, \
     QProgressBar, QLineEdit, QCheckBox, QHBoxLayout
 from album.api import Album
+from album.runner.album_logging import get_active_logger
 
 from album.gui.collection_window import CollectionWindow
 from album.gui.dialog.about_dialog import AboutDialog
@@ -242,9 +243,27 @@ class AlbumGUI(QObject):
         win.get_pre_run_widget().run_solution.connect(lambda: self._run(win, solution))
         win.get_pre_run_widget().cancel_solution.connect(lambda: win.close())
         win.show_pre_run()
-        if "args" in solution_data.setup():
-            args = solution_data.setup()["args"]
+        args = self._get_run_arguments(self.album_instance, solution, solution_data)
+        if args is not None:
             win.get_pre_run_widget().add_arguments(args)
+
+    @staticmethod
+    def _get_run_arguments(album_instance, solution, solution_data):
+        """The arguments as the installed solution declares them, those of its database entry if it cannot be read.
+
+        The database entry has no default None: the database stores it as no default, and the run form asks for a value
+        of an argument without default and required. A catalog deployed with album 1.0 or newer stores such an argument
+        as not required, older catalogs do not.
+        """
+        try:
+            setup = album_instance.resolve_installed(solution).loaded_solution().setup()
+        except Exception as e:
+            get_active_logger().warning(
+                "Cannot read the arguments of the installed solution %s, showing those of its catalog entry: %s"
+                % (solution, e)
+            )
+            setup = solution_data.setup()
+        return setup["args"] if "args" in setup else None
 
     def _setup_album(self, album_instance):
         self.album_instance = album_instance
