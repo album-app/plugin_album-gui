@@ -25,6 +25,7 @@ We use the following:
   branches are built by these jobs and expire after a day.
 - Python 3.14 is listed among the supported Python versions; the CI tests it
 - requires album 1.0 (`album>=1.0.0,<2.0.0`, was `album>=0.12,<0.13`)
+- requires Python 3.11 or newer (was 3.10), as album 1.0 does
 
 ### Fixed
 
