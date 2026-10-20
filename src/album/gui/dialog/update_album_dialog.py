@@ -1,5 +1,6 @@
 import logging
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,48 @@ from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QPushBut
     QLineEdit
 from album.core.utils.operations.file_operations import force_remove
 from album.runner.album_logging import get_active_logger
+
+
+def get_installer_download(branch, system=None, machine=None):
+    """Return the URL of the Album Installer Wizard built by the album-package CI and the file name to save it as.
+
+    The artifact paths and job names have to match the installer build jobs in the .gitlab-ci.yml of album-package.
+    The installers of main are built by the <name>_installer_build jobs and kept, the installers of any other branch
+    by the <name>_installer_build_test jobs and only kept for a day.
+    """
+    system = platform.system() if system is None else system
+    machine = platform.machine() if machine is None else machine
+    url = f"https://gitlab.com/album-app/plugins/album-package/-/jobs/artifacts/{branch}/raw/installer/"
+    suffix = "" if branch == "main" else "_test"
+    if system == "Windows":
+        return url + f"album_installer.exe?job=windows_installer_build{suffix}", "album_installer.exe"
+    elif system == "Linux":
+        return url + f"album_installer?job=linux_installer_build{suffix}", "album_installer"
+    elif system == "Darwin":  # macOS, there is one installer per architecture
+        arch = "arm64" if machine.lower() in ("arm64", "aarch64") else "x86_64"
+        return url + f"{arch}/album_installer.app?job=macos_installer_build_{arch}{suffix}", "album_installer"
+    raise NotImplementedError("Updating Album is not supported on %s." % system)
+
+
+LINUX_TERMINALS = ["gnome-terminal", "konsole", "xfce4-terminal", "xterm"]
+
+
+def get_installer_launch_commands(installer, system=None):
+    """Return the commands (arguments for subprocess.Popen) that run the installer in a terminal window.
+
+    On Linux there is one candidate per supported terminal emulator, the first one that exists is used.
+    """
+    system = platform.system() if system is None else system
+    installer = str(installer)
+    if system == "Windows":
+        # A string, not a list: cmd removes the outer pair of quotes and the inner pair keeps a path with spaces or
+        # characters like & ( ) together. subprocess would escape inner quotes as \" which cmd does not understand.
+        return ['cmd.exe /k ""%s""' % installer]
+    if system == "Darwin":
+        # Terminal runs the text in a shell. Within the AppleScript string, \ and " have to be escaped.
+        shell_command = shlex.quote(installer).replace("\\", "\\\\").replace('"', '\\"')
+        return [["osascript", "-e", 'tell application "Terminal" to do script "%s"' % shell_command]]
+    return [[terminal, "--", "bash", "-c", shlex.quote(installer)] for terminal in LINUX_TERMINALS]
 
 
 class Downloader(QThread):
@@ -120,18 +163,12 @@ class UpdateAlbumDialog(QDialog):
 
     def prepare_download(self):
         logging.debug("Download preparation")
-        os_type = platform.system()
-        url = f"https://gitlab.com/album-app/plugins/album-package/-/jobs/artifacts/{self.package_branch.text()}/raw/installer/"
-        save_path = ""
-        if os_type == "Windows":
-            url += "album_installer.exe?job=windows_installer_build"
-            save_path = "album_installer.exe"
-        elif os_type == "Linux":
-            url += "album_installer?job=linux_installer_build"
-            save_path = "album_installer"
-        elif os_type == "Darwin":  # macOS
-            url += "album_installer?job=macos_installer_build"
-            save_path = "album_installer"
+        try:
+            url, save_path = get_installer_download(self.package_branch.text())
+        except NotImplementedError as e:
+            self.info_label.setText(str(e))
+            self.yes_button.setEnabled(False)
+            return
 
         self.save_path = Path(self.album_base_dir).joinpath(save_path)
         self.save_path_tmp = Path(self.album_base_dir).joinpath("tmp_" + str(save_path))
@@ -192,21 +229,14 @@ class UpdateAlbumDialog(QDialog):
         self.make_executable(command)
         force_remove(self.save_path_tmp)
 
-        os_type = platform.system()
-        full_command = f"\"{command}; echo 'Press Enter to continue.'; read\""
-
-        if os_type == "Windows":
-            subprocess.Popen(["cmd.exe", "/k", full_command])
-        elif os_type == "Darwin":  # macOS
-            subprocess.Popen(["osascript", "-e", f'tell app "Terminal" to do script "{full_command}"'])
-        else:  # Assuming Linux
-            terminals = ["gnome-terminal", "konsole", "xfce4-terminal", "xterm"]
-            for terminal in terminals:
-                try:
-                    subprocess.Popen([terminal, "--", "bash", "-c", command])
-                    break
-                except FileNotFoundError:
-                    continue
+        for launch_command in get_installer_launch_commands(command):
+            try:
+                subprocess.Popen(launch_command)
+                break
+            except FileNotFoundError:
+                continue
+        else:
+            get_active_logger().error("Cannot open a terminal to run %s, please run it yourself." % command)
         sys.exit(0)
 
     def make_executable(self, path):
