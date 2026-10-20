@@ -16,11 +16,15 @@ We use the following:
 
 ## [unreleased]
 
+## [0.5.2]
+
 ### Changed
 
 - "Update Album" with another album-package branch than `main` (the developer option of the dialog) downloads the
   installer of the `<name>_installer_build_test` jobs. album-package keeps only main's installers, the ones of other
   branches are built by these jobs and expire after a day.
+- Python 3.14 is listed among the supported Python versions; the CI tests it
+- requires album 1.0 (`album>=1.0.0,<2.0.0`, was `album>=0.12,<0.13`)
 
 ### Fixed
 
@@ -71,7 +75,8 @@ We use the following:
 - pyproject.toml over setup.cfg
 - Changelog to repository 
 
-[unreleased]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.1...HEAD
+[unreleased]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.2...HEAD
+[0.5.2]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.1...v0.5.2
 [0.5.1]: https://gitlab.com/album-app/album-gui/-/compare/v0.5.0...v0.5.1
 [0.5.0]: https://gitlab.com/album-app/album-gui/-/compare/v0.4.5...v0.5.0
 [0.4.5]: https://gitlab.com/album-app/album-gui/-/compare/v0.4.4...v0.4.5
